@@ -3,9 +3,9 @@ import logging
 from typing import Dict, List, Any, Optional
 import sqlalchemy as sa
 from sqlalchemy import create_engine, text
-from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
 import pandas as pd
+import duckdb
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -21,8 +21,19 @@ class DatabaseManager:
         """Setup database connections based on environment variables"""
         # Primary database connection
         primary_db_url = os.getenv('DATABASE_URL')
-        if primary_db_url:
-            self.engines['primary'] = self._create_engine(primary_db_url, 'primary')
+        
+        # Fallback to DuckDB if no DATABASE_URL is set
+        if not primary_db_url:
+            primary_db_url = 'duckdb:///./glanceable.duckdb'
+            logger.info("No DATABASE_URL set, using default DuckDB database")
+        
+        logger.info(f"Setting up primary database connection: {primary_db_url}")
+        engine = self._create_engine(primary_db_url, 'primary')
+        if engine:
+            self.engines['primary'] = engine
+            logger.info("Primary database engine created successfully")
+        else:
+            logger.error("Failed to create primary database engine")
         
         # Analytics database (if separate)
         analytics_db_url = os.getenv('ANALYTICS_DATABASE_URL')
@@ -34,19 +45,15 @@ class DatabaseManager:
         if warehouse_db_url:
             self.engines['warehouse'] = self._create_engine(warehouse_db_url, 'warehouse')
         
+        logger.info(f"Database engines configured: {list(self.engines.keys())}")
         if not self.engines:
             logger.warning("No database connections configured")
     
     def _create_engine(self, db_url: str, name: str):
-        """Create a SQLAlchemy engine with connection pooling"""
+        """Create a SQLAlchemy engine for DuckDB"""
         try:
             engine = create_engine(
                 db_url,
-                poolclass=QueuePool,
-                pool_size=5,
-                max_overflow=10,
-                pool_pre_ping=True,
-                pool_recycle=3600,
                 echo=os.getenv('SQL_DEBUG', 'false').lower() == 'true'
             )
             
@@ -59,7 +66,12 @@ class DatabaseManager:
             
         except Exception as e:
             logger.error(f"Failed to connect to {name} database: {str(e)}")
-            return None
+            # Still return the engine even if connection test fails
+            # This allows the app to start and handle connection errors gracefully
+            try:
+                return create_engine(db_url, echo=False)
+            except:
+                return None
     
     @contextmanager
     def get_connection(self, db_name: str = 'primary'):
@@ -92,7 +104,7 @@ class DatabaseManager:
         
         base_query = """
         SELECT 
-            DATE(created_at) as date,
+            DATE_TRUNC('day', created_at) as date,
             COALESCE(category, 'Other') as category,
             SUM(amount) as revenue,
             COUNT(*) as transaction_count
@@ -104,7 +116,7 @@ class DatabaseManager:
             base_query += " AND category = :category"
         
         base_query += """
-        GROUP BY DATE(created_at), category
+        GROUP BY DATE_TRUNC('day', created_at), category
         ORDER BY date DESC, revenue DESC
         """
         
@@ -149,11 +161,11 @@ class DatabaseManager:
         
         # Determine date grouping based on granularity
         date_format = {
-            'hour': "DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H:00:00')",
-            'day': "DATE(created_at)",
-            'week': "DATE_FORMAT(created_at, '%%Y-%%u')",
-            'month': "DATE_FORMAT(created_at, '%%Y-%%m')"
-        }.get(granularity, "DATE(created_at)")
+            'hour': "DATE_TRUNC('hour', created_at)",
+            'day': "DATE_TRUNC('day', created_at)",
+            'week': "DATE_TRUNC('week', created_at)",
+            'month': "DATE_TRUNC('month', created_at)"
+        }.get(granularity, "DATE_TRUNC('day', created_at)")
         
         metric_queries = {
             'daily_users': f"""
@@ -202,7 +214,7 @@ class DatabaseManager:
             'current_revenue': """
                 SELECT COALESCE(SUM(amount), 0) as value
                 FROM transactions 
-                WHERE DATE(created_at) = CURDATE()
+                WHERE DATE_TRUNC('day', created_at) = CURRENT_DATE
             """,
             'pending_orders': """
                 SELECT COUNT(*) as value

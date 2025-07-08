@@ -30,7 +30,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
 }) => {
   const nivoTheme = {
     text: {
-      fill: 'var(--foreground)',
+      fill: '#000000',
     },
     tooltip: {
       container: {
@@ -41,24 +41,24 @@ const ChartCard: React.FC<ChartCardProps> = ({
     },
     grid: {
       line: {
-        stroke: 'var(--border)',
+        stroke: '#e2e8f0',
         strokeWidth: 1,
       },
     },
     axis: {
       domain: {
         line: {
-          stroke: 'var(--border)',
+          stroke: '#e2e8f0',
           strokeWidth: 1,
         },
       },
       ticks: {
         line: {
-          stroke: 'var(--border)',
+          stroke: '#e2e8f0',
           strokeWidth: 1,
         },
         text: {
-          fill: 'var(--foreground)',
+          fill: '#000000',
         },
       },
     },
@@ -67,7 +67,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
   const renderChart = () => {
     if (chartType === 'pie') {
       return (
-        <div className="h-64">
+        <div className="h-64 bg-white rounded-md p-4">
           <ResponsivePie
             data={data}
             margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
@@ -78,11 +78,11 @@ const ChartCard: React.FC<ChartCardProps> = ({
             borderWidth={1}
             borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
             arcLinkLabelsSkipAngle={10}
-            arcLinkLabelsTextColor="var(--foreground)"
+            arcLinkLabelsTextColor="#000000"
             arcLinkLabelsThickness={2}
             arcLinkLabelsColor={{ from: 'color' }}
             arcLabelsSkipAngle={10}
-            arcLabelsTextColor="var(--background)"
+            arcLabelsTextColor="#ffffff"
             colors={{ scheme: 'category10' }}
             theme={nivoTheme}
             legends={[
@@ -95,7 +95,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
                 itemsSpacing: 0,
                 itemWidth: 100,
                 itemHeight: 18,
-                itemTextColor: 'var(--muted-foreground)',
+                itemTextColor: '#64748b',
                 itemDirection: 'left-to-right',
                 itemOpacity: 1,
                 symbolSize: 18,
@@ -107,7 +107,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
       );
     } else if (chartType === 'bar') {
       return (
-        <div className="h-64">
+        <div className="h-64 bg-white rounded-md p-4">
           <ResponsiveBar
             data={data.map(d => ({ [d.label]: d.value, id: d.id }))}
             keys={data.map(d => d.label)}
@@ -138,7 +138,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
             }}
             labelSkipWidth={12}
             labelSkipHeight={12}
-            labelTextColor="var(--background)"
+            labelTextColor="#ffffff"
             theme={nivoTheme}
           />
         </div>
@@ -148,13 +148,13 @@ const ChartCard: React.FC<ChartCardProps> = ({
   };
 
   return (
-    <div className="bg-card text-card-foreground rounded-lg shadow-sm overflow-hidden border border-border">
-      <div className="p-4 border-b border-border flex justify-between items-center">
-        <h3 className="font-semibold text-card-foreground">{title}</h3>
+    <div className="bg-white text-gray-900 rounded-lg shadow-sm overflow-hidden border border-border">
+      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="font-semibold text-gray-900">{title}</h3>
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(id)}
-            className="text-muted-foreground hover:text-primary"
+            className="text-gray-500 hover:text-primary"
           >
             <span className="sr-only">Edit</span>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -163,7 +163,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
           </button>
           <button
             onClick={() => onDelete(id)}
-            className="text-muted-foreground hover:text-destructive"
+            className="text-gray-500 hover:text-destructive"
           >
             <span className="sr-only">Delete</span>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

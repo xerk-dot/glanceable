@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from database import DatabaseManager
 from chart_service import ChartService
+from config import config
 import logging
 
 # Load environment variables
@@ -14,8 +15,16 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Get configuration
+config_name = os.getenv('FLASK_ENV', 'development')
+app_config = config[config_name]
+
 app = Flask(__name__)
 CORS(app)
+
+# Set database URL from config
+if hasattr(app_config, 'DATABASE_URL'):
+    os.environ['DATABASE_URL'] = app_config.DATABASE_URL
 
 # Initialize services
 db_manager = DatabaseManager()
@@ -140,6 +149,187 @@ def get_realtime_data(metric):
             'error': str(e)
         }), 500
 
+@app.route('/api/metrics', methods=['GET'])
+def get_metrics():
+    """Get key metrics for the dashboard"""
+    try:
+        realtime_data = db_manager.get_realtime_metrics()
+        
+        # Calculate some additional metrics
+        revenue_data = db_manager.get_revenue_data('7d')
+        total_revenue = revenue_data['revenue'].sum() if not revenue_data.empty else 0
+        
+        user_data = db_manager.get_time_series_data('daily_users', '7d')
+        avg_daily_users = user_data['value'].mean() if not user_data.empty else 0
+        
+        metrics = [
+            {
+                'name': 'Active Users',
+                'value': int(realtime_data.get('active_users', 0)),
+                'change': '+12%',
+                'trend': 'up'
+            },
+            {
+                'name': 'Weekly Revenue',
+                'value': f'${total_revenue:,.0f}',
+                'change': '+8%',
+                'trend': 'up'
+            },
+            {
+                'name': 'Avg Daily Users',
+                'value': f'{avg_daily_users:.0f}',
+                'change': '+5%',
+                'trend': 'up'
+            },
+            {
+                'name': 'Pending Orders',
+                'value': int(realtime_data.get('pending_orders', 0)),
+                'change': '-3%',
+                'trend': 'down'
+            }
+        ]
+        
+        return jsonify({
+            'success': True,
+            'metrics': metrics
+        })
+    except Exception as e:
+        logger.error(f"Error getting metrics: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/recommendations', methods=['GET'])
+def get_recommendations():
+    """Get AI recommendations based on data analysis"""
+    try:
+        # Analyze data to generate recommendations
+        revenue_data = db_manager.get_revenue_data('30d')
+        user_segment_data = db_manager.get_user_segment_data('30d')
+        realtime_data = db_manager.get_realtime_metrics()
+        
+        recommendations = []
+        
+        # Revenue-based recommendations
+        if not revenue_data.empty:
+            avg_revenue = revenue_data['revenue'].mean()
+            recent_revenue = revenue_data.head(7)['revenue'].mean()
+            
+            if recent_revenue < avg_revenue * 0.9:
+                recommendations.append({
+                    'id': 'rev1',
+                    'text': f'Recent revenue down {((avg_revenue - recent_revenue) / avg_revenue * 100):.1f}% - investigate top categories',
+                    'urgency': 'high',
+                    'impact': 'high'
+                })
+        
+        # User segment recommendations
+        if not user_segment_data.empty:
+            premium_users = user_segment_data[user_segment_data['segment'] == 'Premium']
+            if not premium_users.empty and premium_users.iloc[0]['user_count'] < 10:
+                recommendations.append({
+                    'id': 'seg1',
+                    'text': 'Only few premium users - consider loyalty program to increase retention',
+                    'urgency': 'medium',
+                    'impact': 'high'
+                })
+        
+        # Order-based recommendations
+        pending_orders = realtime_data.get('pending_orders', 0)
+        if pending_orders > 50:
+            recommendations.append({
+                'id': 'ord1',
+                'text': f'{pending_orders} pending orders - review fulfillment process',
+                'urgency': 'high',
+                'impact': 'medium'
+            })
+        
+        # Default recommendations if no data-driven ones
+        if not recommendations:
+            recommendations = [
+                {
+                    'id': 'def1',
+                    'text': 'Consider implementing customer feedback system for better insights',
+                    'urgency': 'medium',
+                    'impact': 'high'
+                },
+                {
+                    'id': 'def2',
+                    'text': 'Review top-performing categories for expansion opportunities',
+                    'urgency': 'low',
+                    'impact': 'medium'
+                }
+            ]
+        
+        return jsonify({
+            'success': True,
+            'recommendations': recommendations
+        })
+    except Exception as e:
+        logger.error(f"Error getting recommendations: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/priorities', methods=['GET'])
+def get_priorities():
+    """Get top priorities based on current data"""
+    try:
+        realtime_data = db_manager.get_realtime_metrics()
+        revenue_data = db_manager.get_revenue_data('7d')
+        
+        priorities = []
+        
+        # High priority: pending orders
+        pending_orders = realtime_data.get('pending_orders', 0)
+        if pending_orders > 20:
+            priorities.append({
+                'id': 'pri1',
+                'task': f'Process {pending_orders} pending orders',
+                'deadline': 'Today',
+                'status': 'pending'
+            })
+        
+        # Medium priority: revenue analysis
+        if not revenue_data.empty:
+            low_revenue_days = revenue_data[revenue_data['revenue'] < revenue_data['revenue'].mean() * 0.8]
+            if not low_revenue_days.empty:
+                priorities.append({
+                    'id': 'pri2',
+                    'task': 'Analyze recent revenue dip and create action plan',
+                    'deadline': 'Tomorrow',
+                    'status': 'pending'
+                })
+        
+        # Regular priority: data review
+        priorities.append({
+            'id': 'pri3',
+            'task': 'Weekly performance review and metrics analysis',
+            'deadline': 'This Week',
+            'status': 'in-progress'
+        })
+        
+        # System maintenance
+        priorities.append({
+            'id': 'pri4',
+            'task': 'Update dashboard with latest features',
+            'deadline': 'Next Week',
+            'status': 'pending'
+        })
+        
+        return jsonify({
+            'success': True,
+            'priorities': priorities
+        })
+    except Exception as e:
+        logger.error(f"Error getting priorities: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({
@@ -155,7 +345,7 @@ def internal_error(error):
     }), 500
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.getenv('PORT', 5001))
     debug = os.getenv('FLASK_ENV') == 'development'
     
     logger.info(f"Starting chart backend on port {port}")

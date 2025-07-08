@@ -30,24 +30,26 @@ class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = False
     
-    # Use SQLite for development if no DATABASE_URL is provided
+    # Use DuckDB for development if no DATABASE_URL is provided
     if not Config.DATABASE_URL:
-        DATABASE_URL = 'sqlite:///./dev_data.db'
+        DATABASE_URL = 'duckdb:///./glanceable.duckdb'
 
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     TESTING = False
     
-    # Ensure database URL is provided in production
-    if not Config.DATABASE_URL:
-        raise ValueError("DATABASE_URL must be set in production")
+    def __init__(self):
+        super().__init__()
+        # Ensure database URL is provided in production
+        if not self.DATABASE_URL:
+            raise ValueError("DATABASE_URL must be set in production")
 
 class TestingConfig(Config):
     """Testing configuration"""
     DEBUG = True
     TESTING = True
-    DATABASE_URL = 'sqlite:///:memory:'
+    DATABASE_URL = 'duckdb:///:memory:'
 
 # Configuration mapping
 config = {

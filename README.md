@@ -97,19 +97,23 @@ python3 app.py
 
 🔗 **Backend API will be running at:** http://localhost:5000
 
-### 4. Database Configuration (Optional)
+### 4. Database Setup
 
-For real data integration, configure your database:
+Initialize the DuckDB database with sample data:
+
+```bash
+cd python-backend
+python init_db.py
+```
+
+For production with PostgreSQL:
 
 ```bash
 # Example for PostgreSQL
 export DATABASE_URL="postgresql://username:password@localhost:5432/your_database"
 
-# Example for MySQL  
-export DATABASE_URL="mysql+mysqlconnector://username:password@localhost:3306/your_database"
-
-# Development with SQLite (automatic)
-# No configuration needed - uses sqlite:///./dev_data.db
+# Development with DuckDB (automatic)
+# No configuration needed - uses duckdb:///./glanceable.duckdb
 ```
 
 ## 📋 Database Schema
@@ -164,10 +168,10 @@ CREATE TABLE orders (
 - **CORS enabled** - Ready for cross-origin requests
 
 ### Database Support
-- **PostgreSQL** - Production-ready relational database
-- **MySQL** - Wide compatibility and performance
-- **SQLite** - Zero-config development database
-- **Connection Pooling** - Efficient resource management
+- **DuckDB** - Fast analytical database with excellent Python integration
+- **PostgreSQL** - Production-ready relational database (optional)
+- **Zero-config development** - DuckDB file-based database
+- **High Performance** - Optimized for analytical queries
 
 ## 📡 API Endpoints
 
@@ -318,3 +322,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Ready to transform your data into insights?** [Get started in 5 minutes](#-quick-start) or [view the live demo](https://glanceable.vercel.app)
 
 *Built with ❤️ for data-driven teams*
+
+
+
+
+
+
+colors (glanceable), dark/light
+
+#00dac6
+
+#100454
+
+
+
+
+add filters
+
+clean
+
+ai 

@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #0ea5e9;
-  --primary-foreground: #f8fafc;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --background: #100454;
+  --foreground: #ffffff;
+  --card: #1a0a6e;
+  --card-foreground: #ffffff;
+  --primary: #00dac6;
+  --primary-foreground: #100454;
+  --secondary: #2a1488;
+  --secondary-foreground: #ffffff;
+  --muted: #2a1488;
+  --muted-foreground: #b0b0b0;
+  --accent: #00dac6;
+  --accent-foreground: #100454;
   --destructive: #ef4444;
-  --destructive-foreground: #f8fafc;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #0ea5e9;
+  --destructive-foreground: #ffffff;
+  --border: #ffffff;
+  --input: #2a1488;
+  --ring: #00dac6;
   --radius: 0.5rem;
-  --success: #10b981;
-  --success-foreground: #f8fafc;
+  --success: #00dac6;
+  --success-foreground: #100454;
   --warning: #f59e0b;
-  --warning-foreground: #f8fafc;
+  --warning-foreground: #100454;
 }
 
 @theme inline {
@@ -54,27 +54,27 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #020617;
-    --foreground: #f8fafc;
-    --card: #0f172a;
-    --card-foreground: #f8fafc;
-    --primary: #0ea5e9;
-    --primary-foreground: #f8fafc;
-    --secondary: #1e293b;
-    --secondary-foreground: #f8fafc;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --accent: #1e293b;
-    --accent-foreground: #f8fafc;
+    --background: #100454;
+    --foreground: #ffffff;
+    --card: #1a0a6e;
+    --card-foreground: #ffffff;
+    --primary: #00dac6;
+    --primary-foreground: #100454;
+    --secondary: #2a1488;
+    --secondary-foreground: #ffffff;
+    --muted: #2a1488;
+    --muted-foreground: #b0b0b0;
+    --accent: #00dac6;
+    --accent-foreground: #100454;
     --destructive: #ef4444;
-    --destructive-foreground: #f8fafc;
-    --border: #1e293b;
-    --input: #1e293b;
-    --ring: #0ea5e9;
-    --success: #10b981;
-    --success-foreground: #f8fafc;
+    --destructive-foreground: #ffffff;
+    --border: #ffffff;
+    --input: #2a1488;
+    --ring: #00dac6;
+    --success: #00dac6;
+    --success-foreground: #100454;
     --warning: #f59e0b;
-    --warning-foreground: #f8fafc;
+    --warning-foreground: #100454;
   }
 }
 
@@ -89,7 +89,7 @@ body {
   background: var(--card);
   color: var(--card-foreground);
   border-radius: var(--radius);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 218, 198, 0.1);
   border: 1px solid var(--border);
 }
 

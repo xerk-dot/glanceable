@@ -31,7 +31,7 @@ const ChartForm: React.FC<ChartFormProps> = ({
       title: '',
       chartType: 'pie',
       numericValue: 'count',
-      metric: 'country',
+      metric: 'revenue',
     },
   });
 
@@ -43,11 +43,11 @@ const ChartForm: React.FC<ChartFormProps> = ({
   ];
 
   const metricOptions = [
-    { value: 'country', label: 'Country' },
-    { value: 'city', label: 'City' },
-    { value: 'sentiment', label: 'Sentiment' },
+    { value: 'revenue', label: 'Revenue' },
+    { value: 'daily_users', label: 'Daily Users' },
+    { value: 'orders', label: 'Orders' },
+    { value: 'user_segments', label: 'User Segments' },
     { value: 'category', label: 'Category' },
-    { value: 'channel', label: 'Channel' },
   ];
 
   return (
@@ -80,6 +80,7 @@ const ChartForm: React.FC<ChartFormProps> = ({
         >
           <option value="pie">Pie Chart</option>
           <option value="bar">Bar Chart</option>
+          <option value="line">Line Chart</option>
         </select>
       </div>
 

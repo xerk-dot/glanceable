@@ -19,18 +19,18 @@ const DynamicChartArea: React.FC = () => {
   const [charts, setCharts] = useState<Chart[]>([
     {
       id: '1',
-      title: 'Customer Sentiment by Country',
+      title: 'Revenue by Category',
       chartType: 'pie',
-      numericValue: 'count',
-      metric: 'country',
+      numericValue: 'sum',
+      metric: 'user_segments',
       data: [],
     },
     {
       id: '2',
-      title: 'Average Response Time by Channel',
-      chartType: 'bar',
-      numericValue: 'average',
-      metric: 'channel',
+      title: 'Daily Users by Segment',
+      chartType: 'pie',
+      numericValue: 'count',
+      metric: 'user_segments',
       data: [],
     },
   ]);
@@ -50,7 +50,7 @@ const DynamicChartArea: React.FC = () => {
     try {
       setLoadingCharts((prev) => ({ ...prev, [chart.id]: true }));
       const response = await fetch(
-        `/api/charts?numericValue=${chart.numericValue}&metric=${chart.metric}`
+        `/api/charts?chartType=${chart.chartType}&numericValue=${chart.numericValue}&metric=${chart.metric}&period=30d`
       );
       const result = await response.json();
       
