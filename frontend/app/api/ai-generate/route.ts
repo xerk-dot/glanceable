@@ -52,14 +52,15 @@ Keep text field under 30 characters. Use concise recommendations like "Optimize 
         
       case 'chart_labels':
         const { metric, numericValue, chartType } = context;
+        const timestamp = Date.now();
         prompt = `Generate contextually appropriate chart labels for a ${chartType} chart showing ${metric} data with ${numericValue} values. Return ONLY a JSON array of objects with this exact structure:
 [
-  {"id": "label-1", "label": "Descriptive Label 1", "value": 100},
-  {"id": "label-2", "label": "Descriptive Label 2", "value": 85},
-  {"id": "label-3", "label": "Descriptive Label 3", "value": 72}
+  {"id": "unique-id-1", "label": "Descriptive Label 1", "value": 100},
+  {"id": "unique-id-2", "label": "Descriptive Label 2", "value": 85},
+  {"id": "unique-id-3", "label": "Descriptive Label 3", "value": 72}
 ]
 
-Generate ${chartType === 'pie' ? '5' : '7'} realistic labels that make sense for ${metric}. Each label should be descriptive and specific to the metric type. Values should be realistic numbers for ${numericValue} of ${metric}.`;
+Generate ${chartType === 'pie' ? '5' : '7'} realistic labels that make sense for ${metric}. Each label should be descriptive and specific to the metric type. Values should be realistic numbers for ${numericValue} of ${metric}. IMPORTANT: Each id must be unique - use descriptive names based on the label, not generic numbers.`;
         break;
         
       default:

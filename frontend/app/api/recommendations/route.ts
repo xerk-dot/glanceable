@@ -24,19 +24,19 @@ export async function GET() {
     const fallbackRecommendations = [
       { 
         id: 'rec1', 
-        text: 'Address negative feedback about checkout process - 23% increase in cart abandonment', 
+        text: 'Optimize checkout flow', 
         urgency: 'high', 
         impact: 'high' 
       },
       { 
         id: 'rec2', 
-        text: 'Follow up with top 5 customers who reported issues last week', 
+        text: 'Review customer feedback', 
         urgency: 'medium', 
         impact: 'high' 
       },
       { 
         id: 'rec3', 
-        text: 'Review pricing strategy for enterprise segment - potential 15% revenue increase', 
+        text: 'Update pricing strategy', 
         urgency: 'medium', 
         impact: 'high' 
       },

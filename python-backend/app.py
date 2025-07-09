@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import os
+import requests
 from dotenv import load_dotenv
 from database import DatabaseManager
 from chart_service import ChartService
@@ -30,6 +31,32 @@ if hasattr(app_config, 'DATABASE_URL'):
 # Initialize services
 db_manager = DatabaseManager()
 chart_service = ChartService(db_manager)
+
+# Helper function to call AI generation API
+def generate_ai_content(content_type, context=None):
+    """Call the frontend AI generation API"""
+    try:
+        # Use the frontend URL (adjust port as needed)
+        ai_url = "http://localhost:3001/api/ai-generate"  # Frontend is running on 3001
+        
+        payload = {
+            "type": content_type
+        }
+        
+        if context:
+            payload["context"] = context
+            
+        response = requests.post(ai_url, json=payload, timeout=10)
+        
+        if response.status_code == 200:
+            return response.json().get('data')
+        else:
+            logger.warning(f"AI generation failed with status {response.status_code}")
+            return None
+            
+    except Exception as e:
+        logger.warning(f"Error calling AI generation API: {str(e)}")
+        return None
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -154,41 +181,54 @@ def get_realtime_data(metric):
 def get_metrics():
     """Get key metrics for the dashboard"""
     try:
-        realtime_data = db_manager.get_realtime_metrics()
+        metrics = []
         
-        # Calculate some additional metrics
-        revenue_data = db_manager.get_revenue_data('7d')
-        total_revenue = revenue_data['revenue'].sum() if not revenue_data.empty else 0
+        # Try to generate AI metrics
+        for i in range(4):
+            ai_metric = generate_ai_content('metric')
+            if ai_metric:
+                metrics.append({
+                    'id': f'ai-metric-{i + 1}',
+                    **ai_metric
+                })
         
-        user_data = db_manager.get_time_series_data('daily_users', '7d')
-        avg_daily_users = user_data['value'].mean() if not user_data.empty else 0
-        
-        metrics = [
-            {
-                'name': 'Active Users',
-                'value': int(realtime_data.get('active_users', 0)),
-                'change': '+12%',
-                'trend': 'up'
-            },
-            {
-                'name': 'Weekly Revenue',
-                'value': f'${total_revenue:,.0f}',
-                'change': '+8%',
-                'trend': 'up'
-            },
-            {
-                'name': 'Avg Daily Users',
-                'value': f'{avg_daily_users:.0f}',
-                'change': '+5%',
-                'trend': 'up'
-            },
-            {
-                'name': 'Pending Orders',
-                'value': int(realtime_data.get('pending_orders', 0)),
-                'change': '-3%',
-                'trend': 'down'
-            }
-        ]
+        # If AI generation failed, fall back to data-driven metrics
+        if not metrics:
+            realtime_data = db_manager.get_realtime_metrics()
+            
+            # Calculate some additional metrics
+            revenue_data = db_manager.get_revenue_data('7d')
+            total_revenue = revenue_data['revenue'].sum() if not revenue_data.empty else 0
+            
+            user_data = db_manager.get_time_series_data('daily_users', '7d')
+            avg_daily_users = user_data['value'].mean() if not user_data.empty else 0
+            
+            metrics = [
+                {
+                    'name': 'Active Users',
+                    'value': int(realtime_data.get('active_users', 0)),
+                    'change': '+12%',
+                    'trend': 'up'
+                },
+                {
+                    'name': 'Weekly Revenue',
+                    'value': f'${total_revenue:,.0f}',
+                    'change': '+8%',
+                    'trend': 'up'
+                },
+                {
+                    'name': 'Avg Daily Users',
+                    'value': f'{avg_daily_users:.0f}',
+                    'change': '+5%',
+                    'trend': 'up'
+                },
+                {
+                    'name': 'Pending Orders',
+                    'value': int(realtime_data.get('pending_orders', 0)),
+                    'change': '-3%',
+                    'trend': 'down'
+                }
+            ]
         
         return jsonify({
             'success': True,
@@ -205,63 +245,74 @@ def get_metrics():
 def get_recommendations():
     """Get AI recommendations based on data analysis"""
     try:
-        # Analyze data to generate recommendations
-        revenue_data = db_manager.get_revenue_data('30d')
-        user_segment_data = db_manager.get_user_segment_data('30d')
-        realtime_data = db_manager.get_realtime_metrics()
-        
         recommendations = []
         
-        # Revenue-based recommendations
-        if not revenue_data.empty:
-            avg_revenue = revenue_data['revenue'].mean()
-            recent_revenue = revenue_data.head(7)['revenue'].mean()
-            
-            if recent_revenue < avg_revenue * 0.9:
+        # Try to generate AI recommendations
+        for i in range(3):
+            ai_recommendation = generate_ai_content('recommendation')
+            if ai_recommendation:
                 recommendations.append({
-                    'id': 'rev1',
-                    'text': f'Recent revenue down {((avg_revenue - recent_revenue) / avg_revenue * 100):.1f}% - investigate top categories',
-                    'urgency': 'high',
-                    'impact': 'high'
+                    'id': f'ai-rec-{i + 1}',
+                    **ai_recommendation
                 })
         
-        # User segment recommendations
-        if not user_segment_data.empty:
-            premium_users = user_segment_data[user_segment_data['segment'] == 'Premium']
-            if not premium_users.empty and premium_users.iloc[0]['user_count'] < 10:
-                recommendations.append({
-                    'id': 'seg1',
-                    'text': 'Only few premium users - consider loyalty program to increase retention',
-                    'urgency': 'medium',
-                    'impact': 'high'
-                })
-        
-        # Order-based recommendations
-        pending_orders = realtime_data.get('pending_orders', 0)
-        if pending_orders > 50:
-            recommendations.append({
-                'id': 'ord1',
-                'text': f'{pending_orders} pending orders - review fulfillment process',
-                'urgency': 'high',
-                'impact': 'medium'
-            })
-        
-        # Default recommendations if no data-driven ones
+        # If AI generation failed, fall back to data-driven recommendations
         if not recommendations:
-            recommendations = [
-                {
-                    'id': 'def1',
-                    'text': 'Consider implementing customer feedback system for better insights',
-                    'urgency': 'medium',
-                    'impact': 'high'
-                },
-                {
-                    'id': 'def2',
-                    'text': 'Review top-performing categories for expansion opportunities',
-                    'urgency': 'low',
+            # Analyze data to generate recommendations
+            revenue_data = db_manager.get_revenue_data('30d')
+            user_segment_data = db_manager.get_user_segment_data('30d')
+            realtime_data = db_manager.get_realtime_metrics()
+            
+            # Revenue-based recommendations
+            if not revenue_data.empty:
+                avg_revenue = revenue_data['revenue'].mean()
+                recent_revenue = revenue_data.head(7)['revenue'].mean()
+                
+                if recent_revenue < avg_revenue * 0.9:
+                    recommendations.append({
+                        'id': 'rev1',
+                        'text': f'Recent revenue down {((avg_revenue - recent_revenue) / avg_revenue * 100):.1f}% - investigate top categories',
+                        'urgency': 'high',
+                        'impact': 'high'
+                    })
+            
+            # User segment recommendations
+            if not user_segment_data.empty:
+                premium_users = user_segment_data[user_segment_data['segment'] == 'Premium']
+                if not premium_users.empty and premium_users.iloc[0]['user_count'] < 10:
+                    recommendations.append({
+                        'id': 'seg1',
+                        'text': 'Only few premium users - consider loyalty program to increase retention',
+                        'urgency': 'medium',
+                        'impact': 'high'
+                    })
+            
+            # Order-based recommendations
+            pending_orders = realtime_data.get('pending_orders', 0)
+            if pending_orders > 50:
+                recommendations.append({
+                    'id': 'ord1',
+                    'text': f'{pending_orders} pending orders - review fulfillment process',
+                    'urgency': 'high',
                     'impact': 'medium'
-                }
-            ]
+                })
+            
+            # Default recommendations if no data-driven ones
+            if not recommendations:
+                recommendations = [
+                    {
+                        'id': 'def1',
+                        'text': 'Consider implementing customer feedback system for better insights',
+                        'urgency': 'medium',
+                        'impact': 'high'
+                    },
+                    {
+                        'id': 'def2',
+                        'text': 'Review top-performing categories for expansion opportunities',
+                        'urgency': 'low',
+                        'impact': 'medium'
+                    }
+                ]
         
         return jsonify({
             'success': True,
@@ -278,47 +329,58 @@ def get_recommendations():
 def get_priorities():
     """Get top priorities based on current data"""
     try:
-        realtime_data = db_manager.get_realtime_metrics()
-        revenue_data = db_manager.get_revenue_data('7d')
-        
         priorities = []
         
-        # High priority: pending orders
-        pending_orders = realtime_data.get('pending_orders', 0)
-        if pending_orders > 20:
-            priorities.append({
-                'id': 'pri1',
-                'task': f'Process {pending_orders} pending orders',
-                'deadline': 'Today',
-                'status': 'pending'
-            })
-        
-        # Medium priority: revenue analysis
-        if not revenue_data.empty:
-            low_revenue_days = revenue_data[revenue_data['revenue'] < revenue_data['revenue'].mean() * 0.8]
-            if not low_revenue_days.empty:
+        # Try to generate AI priorities
+        for i in range(3):
+            ai_priority = generate_ai_content('priority')
+            if ai_priority:
                 priorities.append({
-                    'id': 'pri2',
-                    'task': 'Analyze recent revenue dip and create action plan',
-                    'deadline': 'Tomorrow',
-                    'status': 'pending'
+                    'id': f'ai-pri-{i + 1}',
+                    **ai_priority
                 })
         
-        # Regular priority: data review
-        priorities.append({
-            'id': 'pri3',
-            'task': 'Weekly performance review and metrics analysis',
-            'deadline': 'This Week',
-            'status': 'in-progress'
-        })
-        
-        # System maintenance
-        priorities.append({
-            'id': 'pri4',
-            'task': 'Update dashboard with latest features',
-            'deadline': 'Next Week',
-            'status': 'pending'
-        })
+        # If AI generation failed, fall back to data-driven priorities
+        if not priorities:
+            realtime_data = db_manager.get_realtime_metrics()
+            revenue_data = db_manager.get_revenue_data('7d')
+            
+            # High priority: pending orders
+            pending_orders = realtime_data.get('pending_orders', 0)
+            if pending_orders > 20:
+                priorities.append({
+                    'id': 'pri1',
+                    'task': f'Process {pending_orders} pending orders',
+                    'deadline': 'Today',
+                    'status': 'pending'
+                })
+            
+            # Medium priority: revenue analysis
+            if not revenue_data.empty:
+                low_revenue_days = revenue_data[revenue_data['revenue'] < revenue_data['revenue'].mean() * 0.8]
+                if not low_revenue_days.empty:
+                    priorities.append({
+                        'id': 'pri2',
+                        'task': 'Analyze recent revenue dip and create action plan',
+                        'deadline': 'Tomorrow',
+                        'status': 'pending'
+                    })
+            
+            # Regular priority: data review
+            priorities.append({
+                'id': 'pri3',
+                'task': 'Weekly performance review and metrics analysis',
+                'deadline': 'This Week',
+                'status': 'in-progress'
+            })
+            
+            # System maintenance
+            priorities.append({
+                'id': 'pri4',
+                'task': 'Update dashboard with latest features',
+                'deadline': 'Next Week',
+                'status': 'pending'
+            })
         
         return jsonify({
             'success': True,

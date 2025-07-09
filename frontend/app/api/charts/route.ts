@@ -37,7 +37,12 @@ const generateChartData = async (numericValue: string, metric: string, chartType
 
     if (response.ok) {
       const result = await response.json();
-      return result.data;
+      // Ensure unique IDs by appending timestamp and index
+      const timestamp = Date.now();
+      return result.data.map((item: any, index: number) => ({
+        ...item,
+        id: `${item.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${timestamp}-${index}`
+      }));
     }
   } catch (error) {
     console.warn('AI label generation failed, using contextual fallbacks:', error);
@@ -59,6 +64,7 @@ const generateChartData = async (numericValue: string, metric: string, chartType
 
   const labels = contextualLabels[metric] || contextualLabels['category'] || ['Category A', 'Category B', 'Category C', 'Category D', 'Category E'];
   
+  const timestamp = Date.now();
   return labels.slice(0, chartType === 'pie' ? 5 : 7).map((label, index) => {
     let value = 0;
     
@@ -85,7 +91,7 @@ const generateChartData = async (numericValue: string, metric: string, chartType
     }
     
     return {
-      id: `${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${index}`,
+      id: `${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${timestamp}-${index}`,
       label,
       value,
     };
@@ -131,6 +137,7 @@ export async function GET(request: Request) {
     
     if (backendData.success) {
       // Transform backend data to frontend format
+      const timestamp = Date.now();
       const transformedData = backendData.data.map((item: BackendDataItem, index: number) => {
         let id, label, value;
         
@@ -138,58 +145,58 @@ export async function GET(request: Request) {
         if (metric === 'revenue') {
           if (item.category) {
             // Revenue by category data
-            id = `${item.category}-${index}`;
+            id = `${item.category}-${timestamp}-${index}`;
             label = item.category.charAt(0).toUpperCase() + item.category.slice(1);
             value = item.revenue || item.total_revenue || 0;
           } else if (item.x && typeof item.x === 'string') {
             // Bar chart revenue data
-            id = `${item.x}-${index}`;
+            id = `${item.x}-${timestamp}-${index}`;
             label = item.x;
             // Sum revenue values for bar charts
             const keys = Object.keys(item).filter(key => key !== 'x' && typeof item[key] === 'number');
             value = keys.reduce((sum, key) => sum + (typeof item[key] === 'number' ? item[key] as number : 0), 0);
           } else {
             // Fallback revenue data
-            id = `revenue-${index}`;
+            id = `revenue-${timestamp}-${index}`;
             label = `Category ${index + 1}`;
             value = Math.floor(Math.random() * 5000) + 1000;
           }
         } else if (metric === 'user_segments') {
           if (item.segment) {
             // User segments data
-            id = `${item.segment}-${index}`;
+            id = `${item.segment}-${timestamp}-${index}`;
             label = item.segment.charAt(0).toUpperCase() + item.segment.slice(1);
             value = item.user_count || item.count || 0;
           } else if (item.id && item.label && item.value !== undefined) {
             // Already in correct format, but ensure unique ID
-            id = `${item.id}-${index}`;
+            id = `${item.id}-${timestamp}-${index}`;
             label = item.label;
             value = item.value;
           } else {
             // Fallback user segment data
             const segments = ['Premium', 'Regular', 'Basic', 'Trial'];
-            id = `${segments[index % segments.length].toLowerCase()}-${index}`;
+            id = `${segments[index % segments.length].toLowerCase()}-${timestamp}-${index}`;
             label = segments[index % segments.length];
             value = Math.floor(Math.random() * 100) + 10;
           }
         } else if (metric === 'daily_users') {
           if (item.date || item.x) {
             // Daily users data
-            id = `${item.date || item.x}-${index}`;
+            id = `${item.date || item.x}-${timestamp}-${index}`;
             label = item.date || item.x;
             value = item.active_users || item.users || item.value || 0;
           } else {
             // Fallback daily users data
             const date = new Date();
             date.setDate(date.getDate() - index);
-            id = `${date.toISOString().split('T')[0]}-${index}`;
+            id = `${date.toISOString().split('T')[0]}-${timestamp}-${index}`;
             label = date.toLocaleDateString();
             value = Math.floor(Math.random() * 200) + 50;
           }
                  } else {
            // Generic fallback with contextual labels
            if (item.id && item.label && item.value !== undefined) {
-             id = `${item.id}-${index}`;
+             id = `${item.id}-${timestamp}-${index}`;
              label = item.label;
              value = item.value;
            } else {
@@ -204,7 +211,7 @@ export async function GET(request: Request) {
              const labels = contextualLabels[metric as keyof typeof contextualLabels] || ['Category A', 'Category B', 'Category C', 'Category D', 'Category E'];
              label = labels[index % labels.length] || `${metric} ${index + 1}`;
              
-             id = `${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${index}`;
+             id = `${label.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${timestamp}-${index}`;
              value = Math.floor(Math.random() * 100) + 10;
            }
          }
