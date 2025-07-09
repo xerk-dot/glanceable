@@ -33,7 +33,7 @@ class DevelopmentConfig(Config):
     
     # Use DuckDB for development if no DATABASE_URL is provided
     if not Config.DATABASE_URL:
-        DATABASE_URL = 'duckdb:///./glanceable.duckdb'
+        DATABASE_URL = 'duckdb:///../data/glanceable.duckdb'
 
 class ProductionConfig(Config):
     """Production configuration"""

@@ -154,6 +154,45 @@ class DatabaseManager:
         
         return self.execute_query(query, {'start_date': start_date})
     
+    def get_revenue_by_category_data(self, period: str = '30d') -> pd.DataFrame:
+        """Get revenue data grouped by category for pie charts"""
+        days = int(period.replace('d', ''))
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        query = """
+        SELECT 
+            CASE 
+                WHEN category = 'electronics' THEN 'Electronics & Tech'
+                WHEN category = 'clothing' THEN 'Fashion & Apparel'
+                WHEN category = 'food' THEN 'Food & Dining'
+                WHEN category = 'books' THEN 'Books & Media'
+                WHEN category = 'home' THEN 'Home & Garden'
+                WHEN category = 'sports' THEN 'Sports & Outdoors'
+                WHEN category = 'beauty' THEN 'Beauty & Personal Care'
+                WHEN category = 'automotive' THEN 'Automotive & Tools'
+                ELSE 'Other'
+            END as category,
+            SUM(amount) as revenue,
+            COUNT(*) as transaction_count
+        FROM transactions 
+        WHERE created_at >= :start_date
+        GROUP BY 
+            CASE 
+                WHEN category = 'electronics' THEN 'Electronics & Tech'
+                WHEN category = 'clothing' THEN 'Fashion & Apparel'
+                WHEN category = 'food' THEN 'Food & Dining'
+                WHEN category = 'books' THEN 'Books & Media'
+                WHEN category = 'home' THEN 'Home & Garden'
+                WHEN category = 'sports' THEN 'Sports & Outdoors'
+                WHEN category = 'beauty' THEN 'Beauty & Personal Care'
+                WHEN category = 'automotive' THEN 'Automotive & Tools'
+                ELSE 'Other'
+            END
+        ORDER BY revenue DESC
+        """
+        
+        return self.execute_query(query, {'start_date': start_date})
+
     def get_time_series_data(self, metric: str, period: str = '30d', granularity: str = 'day') -> pd.DataFrame:
         """Get time series data for line charts"""
         days = int(period.replace('d', ''))

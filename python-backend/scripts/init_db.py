@@ -128,7 +128,7 @@ def generate_sample_data(conn: duckdb.DuckDBPyConnection):
 
 def main():
     """Main initialization function"""
-    db_path = "./glanceable.duckdb"
+    db_path = "../data/glanceable.duckdb"
     
     # Remove existing database if it exists
     if os.path.exists(db_path):

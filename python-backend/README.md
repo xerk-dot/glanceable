@@ -1,229 +1,111 @@
-# Chart Backend API
+# Glanceable Backend
 
-A Python Flask backend specifically designed for serving chart data from remote SQL databases.
+A clean, organized Python Flask backend for serving chart data and dashboard metrics.
 
-## Features
+## 📁 Project Structure
 
-- **Multiple Database Support**: PostgreSQL, MySQL, SQLite, and more
-- **Chart Data Processing**: Bar charts, pie charts, line charts (time series)
-- **Real-time Metrics**: Live data endpoints for dashboard updates
-- **Connection Pooling**: Efficient database connection management
-- **CORS Enabled**: Ready for frontend integration
-- **Sample Data**: Fallback data generation when database is unavailable
+```
+python-backend/
+├── src/                    # Source code
+│   ├── __init__.py        # Package initialization
+│   ├── app.py             # Main Flask application
+│   ├── chart_service.py   # Chart data service
+│   ├── database.py        # Database manager
+│   ├── user_data_db.py    # User data management
+│   └── config.py          # Configuration settings
+├── data/                   # Database files
+│   ├── glanceable.duckdb  # Main database
+│   └── user_data.duckdb   # User data database
+├── scripts/               # Utility scripts
+│   └── init_db.py         # Database initialization
+├── server.py              # Main server entry point
+├── init.py                # Database setup script
+├── requirements.txt       # Python dependencies
+└── README.md             # This file
+```
 
-## API Endpoints
+## 🚀 Quick Start
+
+1. **Install Dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+2. **Initialize Database:**
+```bash
+python init.py
+```
+
+3. **Start Server:**
+```bash
+python server.py
+```
+
+The server will start on `http://localhost:5000`
+
+## 📊 API Endpoints
 
 ### Health Check
 ```
 GET /health
 ```
-Returns service health status.
 
-### Chart Data Endpoints
-
-#### Bar Charts
+### Chart Data
 ```
-GET /api/charts/bar?metric=revenue&period=30d&category=electronics
-```
-Parameters:
-- `metric`: revenue, transactions, user_activity
-- `period`: 7d, 30d, 90d, 1y
-- `category`: (optional) filter by category
-
-#### Pie Charts
-```
+GET /api/charts/bar?metric=revenue&period=30d
 GET /api/charts/pie?metric=user_segments&period=30d
+GET /api/charts/line?metric=daily_users&period=30d
 ```
-Parameters:
-- `metric`: user_segments, revenue_by_segment, traffic_sources
-- `period`: 7d, 30d, 90d, 1y
 
-#### Line Charts (Time Series)
+### Dashboard Data
 ```
-GET /api/charts/line?metric=daily_users&period=30d&granularity=day
+GET /api/metrics           # Key metrics
+GET /api/recommendations   # AI recommendations  
+GET /api/priorities       # Top priorities
 ```
-Parameters:
-- `metric`: daily_users, revenue, orders, conversion_rate
-- `period`: 7d, 30d, 90d, 1y
-- `granularity`: hour, day, week, month
 
-#### Available Metrics
+### User Data Management
 ```
-GET /api/charts/metrics
+GET/POST /api/user/charts        # User charts
+GET/POST /api/user/metrics       # User metrics
+GET/POST /api/user/priorities    # User priorities
 ```
-Returns all available metrics organized by chart type.
 
-#### Real-time Data
-```
-GET /api/charts/realtime/active_users
-```
-Returns current real-time value for the specified metric.
+## 🗄️ Database
 
-## Database Configuration
+The backend uses DuckDB for fast analytics:
+- **Main Database**: `data/glanceable.duckdb` - Contains transactions, activities, orders
+- **User Database**: `data/user_data.duckdb` - Contains user-specific dashboard data
 
-The backend supports multiple database connections:
+### Sample Data
+The database initialization creates:
+- 1,000 transactions across 8 categories
+- 2,000 user activities with 6 activity types  
+- 500 orders with 5 status types
 
-### Environment Variables
+## 🔧 Configuration
 
+Environment variables (optional):
 ```bash
-# Primary database
-DATABASE_URL=postgresql://user:pass@host:5432/dbname
-
-# Analytics database (optional)
-ANALYTICS_DATABASE_URL=postgresql://user:pass@analytics-host:5432/analytics
-
-# Data warehouse (optional)
-WAREHOUSE_DATABASE_URL=postgresql://user:pass@warehouse-host:5432/warehouse
+PORT=5000                    # Server port
+DATABASE_URL=duckdb://...    # Custom database URL
+FLASK_ENV=development        # Environment mode
 ```
 
-### Supported Database URLs
+## 📈 Chart Service
 
-**PostgreSQL:**
-```
-postgresql://username:password@host:port/database
-```
+The chart service provides simplified, hardcoded data for reliable chart rendering:
+- **Consistent IDs**: Chart data uses human-readable IDs matching labels
+- **Multiple Metrics**: Revenue, daily users, orders, user segments
+- **Multiple Chart Types**: Bar, pie, and line charts supported
 
-**MySQL:**
-```
-mysql+mysqlconnector://username:password@host:port/database
-```
-
-**SQLite (Development):**
-```
-sqlite:///path/to/database.db
-```
-
-## Expected Database Schema
-
-The backend expects the following tables for full functionality:
-
-### transactions
-```sql
-CREATE TABLE transactions (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER,
-    amount DECIMAL(10,2),
-    category VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### user_activities
-```sql
-CREATE TABLE user_activities (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER,
-    activity_type VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### orders
-```sql
-CREATE TABLE orders (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER,
-    status VARCHAR(50),
-    total_amount DECIMAL(10,2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## Installation & Setup
-
-1. **Install Dependencies:**
-```bash
-cd python-backend
-pip install -r requirements.txt
-```
-
-2. **Configure Environment:**
-```bash
-# Copy and edit the environment file
-cp .env.example .env
-# Edit .env with your database credentials
-```
-
-3. **Run Development Server:**
-```bash
-python run.py
-```
-
-Or using Flask directly:
-```bash
-flask --app app run --debug
-```
-
-## Production Deployment
-
-### Using Gunicorn
-```bash
-gunicorn --bind 0.0.0.0:5000 --workers 4 app:app
-```
-
-### Using Docker
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-EXPOSE 5000
-
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "app:app"]
-```
-
-## Frontend Integration
-
-### Example JavaScript Usage
-
-```javascript
-// Get bar chart data
-const barData = await fetch('http://localhost:5000/api/charts/bar?metric=revenue&period=30d')
-  .then(res => res.json());
-
-// Get real-time data
-const realtimeData = await fetch('http://localhost:5000/api/charts/realtime/active_users')
-  .then(res => res.json());
-
-// Use with your charting library (e.g., Nivo, Chart.js, D3)
-```
-
-### Response Format
-
-All endpoints return JSON in this format:
+All chart data returns in the format:
 ```json
 {
   "success": true,
-  "data": [...],
-  "metadata": {
-    "metric": "revenue",
-    "period": "30d",
-    "generated_at": "2024-01-15T10:30:00Z"
-  }
+  "data": [
+    {"id": "Electronics", "label": "Electronics", "value": 36611},
+    {"id": "Beauty", "label": "Beauty", "value": 32513}
+  ]
 }
-```
-
-## Development Features
-
-- **Automatic Sample Data**: When database is not connected, returns realistic sample data
-- **SQL Debugging**: Set `SQL_DEBUG=true` to log all SQL queries
-- **Connection Testing**: Built-in connection health checks
-- **Error Handling**: Graceful fallbacks and detailed error logging
-
-## Logging
-
-The backend uses Python's standard logging module. Set the log level via environment:
-```bash
-LOG_LEVEL=DEBUG  # DEBUG, INFO, WARNING, ERROR
-```
-
-## Security Considerations
-
-- Always use environment variables for database credentials
-- Enable CORS only for trusted domains in production
-- Use connection pooling to prevent connection exhaustion
-- Implement rate limiting for production use
-- Validate and sanitize all input parameters 
+``` 

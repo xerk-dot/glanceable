@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 import os
 import requests
 from dotenv import load_dotenv
-from database import DatabaseManager
-from chart_service import ChartService
-from user_data_db import user_data_manager
-from config import config
+from .database import DatabaseManager
+from .chart_service import ChartService
+from .user_data_db import user_data_manager
+from .config import config
 import logging
 
 # Load environment variables
@@ -36,8 +36,26 @@ chart_service = ChartService(db_manager)
 def generate_ai_content(content_type, context=None):
     """Call the frontend AI generation API"""
     try:
-        # Use the frontend URL (adjust port as needed)
-        ai_url = "http://localhost:3001/api/ai-generate"  # Frontend is running on 3001
+        # Use the frontend URL (try multiple ports)
+        frontend_ports = [3003, 3002, 3001, 3000]  # Try current ports first
+        ai_url = None
+        
+        for port in frontend_ports:
+            try:
+                test_url = f"http://localhost:{port}/api/ai-generate"
+                # Try a quick test call to see if the server is running
+                test_payload = {"type": "metric"}
+                test_response = requests.post(test_url, json=test_payload, timeout=2)
+                if test_response.status_code in [200, 400, 500]:  # Any response means server is running
+                    ai_url = test_url
+                    logger.info(f"Found frontend AI API at port {port}")
+                    break
+            except:
+                continue
+        
+        if not ai_url:
+            ai_url = "http://localhost:3001/api/ai-generate"  # Fallback
+            logger.warning("Could not find running frontend, using fallback port 3001")
         
         payload = {
             "type": content_type

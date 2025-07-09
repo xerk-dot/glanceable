@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   "trend": "up, down, or neutral"
 }
 
-Keep ALL fields under 20 characters. Focus on short metric names like "CTR", "CAC", "MRR", "DAU".`;
+Keep ALL fields under 20 characters. Focus on short metric names, be very specific`;
         break;
         
       case 'priority':
@@ -36,7 +36,7 @@ Keep ALL fields under 20 characters. Focus on short metric names like "CTR", "CA
   "status": "pending, in-progress, or completed"
 }
 
-Keep ALL fields under 30 characters. Use concise task names like "Fix critical login bug", "Update payment API", "Review Q4 metrics".`;
+Keep ALL fields under 30 characters. Use concise task names.`;
         break;
         
       case 'recommendation':
@@ -47,12 +47,11 @@ Keep ALL fields under 30 characters. Use concise task names like "Fix critical l
   "impact": "high, medium, or low"
 }
 
-Keep text field under 30 characters. Use concise recommendations like "Optimize database queries", "Add A/B testing framework", "Fix mobile UI responsiveness".`;
+Keep text field under 30 characters. Use concise recommendations.`;
         break;
         
       case 'chart_labels':
         const { metric, numericValue, chartType } = context;
-        const timestamp = Date.now();
         prompt = `Generate contextually appropriate chart labels for a ${chartType} chart showing ${metric} data with ${numericValue} values. Return ONLY a JSON array of objects with this exact structure:
 [
   {"id": "unique-id-1", "label": "Descriptive Label 1", "value": 100},

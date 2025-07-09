@@ -63,7 +63,7 @@ class UserDataManager:
     
     def _setup_database(self):
         """Setup database connection and create tables"""
-        db_url = os.getenv('USER_DATA_DATABASE_URL', 'duckdb:///./user_data.duckdb')
+        db_url = os.getenv('USER_DATA_DATABASE_URL', 'duckdb:///../data/user_data.duckdb')
         logger.info(f"Setting up user data database: {db_url}")
         
         try:

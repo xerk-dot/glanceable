@@ -316,8 +316,8 @@ const DynamicChartArea: React.FC = () => {
 
       {isFormOpen && (
         <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-card text-card-foreground rounded-lg p-6 w-full max-w-md shadow-lg border border-border">
-            <h3 className="text-lg font-semibold mb-4 text-card-foreground">
+          <div className="bg-white text-gray-900 rounded-lg p-6 w-full max-w-md shadow-lg border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">
               {editingChart ? 'Edit Chart' : 'Add New Chart'}
             </h3>
             <ChartForm

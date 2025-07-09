@@ -28,6 +28,16 @@ const ChartCard: React.FC<ChartCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  // Debug logging
+  console.log(`ChartCard ${title} (${chartType}):`, {
+    id,
+    title,
+    chartType,
+    data,
+    dataLength: data?.length,
+    firstDataItem: data?.[0]
+  });
+
   const nivoTheme = {
     text: {
       fill: '#000000',
@@ -66,6 +76,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
 
   const renderChart = () => {
     if (chartType === 'pie') {
+      console.log(`Rendering pie chart for ${title} with data:`, data);
       return (
         <div className="h-64 bg-white rounded-md p-4">
           <ResponsivePie
@@ -106,12 +117,18 @@ const ChartCard: React.FC<ChartCardProps> = ({
         </div>
       );
     } else if (chartType === 'bar') {
+      const barData = data.map((d, index) => ({ 
+        category: d.label, 
+        value: d.value, 
+        id: d.id || `bar-${index}` 
+      }));
+      console.log(`Rendering bar chart for ${title} with transformed data:`, barData);
       return (
         <div className="h-64 bg-white rounded-md p-4">
           <ResponsiveBar
-            data={data.map(d => ({ [d.label]: d.value, id: d.id }))}
-            keys={data.map(d => d.label)}
-            indexBy="id"
+            data={barData}
+            keys={['value']}
+            indexBy="category"
             margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
             padding={0.3}
             valueScale={{ type: 'linear' }}
