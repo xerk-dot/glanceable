@@ -1,24 +1,56 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import OverviewCard from './OverviewCard';
 
 interface Metric {
   id?: string;
-  name: string;
+  title?: string;
+  name?: string;
   value: string | number;
   change?: string;
+  changeType?: 'positive' | 'negative' | 'neutral';
   trend?: 'up' | 'down' | 'neutral';
 }
 
 const KeyMetrics: React.FC = () => {
-  const [metrics, setMetrics] = useState<Metric[]>([
-    { name: 'Revenue', value: '$45.2K', change: '+12%', trend: 'up' },
-    { name: 'Users', value: '2,847', change: '+5%', trend: 'up' },
-    { name: 'Orders', value: '182', change: '-3%', trend: 'down' },
-    { name: 'Conversion', value: '3.2%', change: '+0.8%', trend: 'up' },
-    { name: 'Growth Rate', value: '15.8%', change: '+2.1%', trend: 'up' },
-  ]);
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch('/api/metrics');
+        const data = await response.json();
+        
+        if (data.metrics) {
+          // Transform API data to component format
+          const transformedMetrics = data.metrics.map((metric: { id: string; title?: string; name?: string; value: string | number; change?: string; changeType?: string }) => ({
+            id: metric.id,
+            name: metric.title || metric.name,
+            value: metric.value,
+            change: metric.change,
+            trend: metric.changeType === 'positive' ? 'up' : 
+                   metric.changeType === 'negative' ? 'down' : 'neutral'
+          }));
+          setMetrics(transformedMetrics);
+        }
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+        // Keep fallback data
+        setMetrics([
+          { name: 'Revenue', value: '$45.2K', change: '+12%', trend: 'up' },
+          { name: 'Users', value: '2,847', change: '+5%', trend: 'up' },
+          { name: 'Orders', value: '182', change: '-3%', trend: 'down' },
+          { name: 'Conversion', value: '3.2%', change: '+0.8%', trend: 'up' },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newMetric, setNewMetric] = useState({

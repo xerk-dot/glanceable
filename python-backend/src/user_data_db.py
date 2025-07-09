@@ -79,11 +79,16 @@ class UserDataManager:
             
         except Exception as e:
             logger.error(f"Failed to setup user data database: {str(e)}")
-            raise
+            # Don't raise - allow app to continue without user data DB
+            self.engine = None
+            self.Session = None
     
     @contextmanager
     def get_session(self):
         """Get a database session with automatic cleanup"""
+        if not self.Session:
+            raise RuntimeError("Database not available")
+        
         session = self.Session()
         try:
             yield session
@@ -95,41 +100,72 @@ class UserDataManager:
         finally:
             session.close()
     
+    def is_available(self) -> bool:
+        """Check if database is available"""
+        return self.engine is not None and self.Session is not None
+    
     # Chart operations
     def get_charts(self) -> List[Dict[str, Any]]:
         """Get all user charts"""
-        with self.get_session() as session:
-            charts = session.query(UserChart).all()
-            return [
-                {
+        if not self.is_available():
+            return []
+        
+        try:
+            with self.get_session() as session:
+                charts = session.query(UserChart).all()
+                return [
+                    {
+                        'id': chart.id,
+                        'title': chart.title,
+                        'chartType': chart.chart_type,
+                        'numericValue': chart.numeric_value,
+                        'metric': chart.metric,
+                        'created_at': chart.created_at.isoformat(),
+                        'updated_at': chart.updated_at.isoformat()
+                    }
+                    for chart in charts
+                ]
+        except Exception as e:
+            logger.error(f"Error getting charts: {e}")
+            return []
+    
+    def create_chart(self, chart_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new chart"""
+        if not self.is_available():
+            # Return the data as-is when DB is not available
+            return {
+                'id': chart_data['id'],
+                'title': chart_data['title'],
+                'chartType': chart_data['chartType'],
+                'numericValue': chart_data['numericValue'],
+                'metric': chart_data['metric']
+            }
+        
+        try:
+            with self.get_session() as session:
+                chart = UserChart(
+                    id=chart_data['id'],
+                    title=chart_data['title'],
+                    chart_type=chart_data['chartType'],
+                    numeric_value=chart_data['numericValue'],
+                    metric=chart_data['metric']
+                )
+                session.add(chart)
+                return {
                     'id': chart.id,
                     'title': chart.title,
                     'chartType': chart.chart_type,
                     'numericValue': chart.numeric_value,
-                    'metric': chart.metric,
-                    'created_at': chart.created_at.isoformat(),
-                    'updated_at': chart.updated_at.isoformat()
+                    'metric': chart.metric
                 }
-                for chart in charts
-            ]
-    
-    def create_chart(self, chart_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a new chart"""
-        with self.get_session() as session:
-            chart = UserChart(
-                id=chart_data['id'],
-                title=chart_data['title'],
-                chart_type=chart_data['chartType'],
-                numeric_value=chart_data['numericValue'],
-                metric=chart_data['metric']
-            )
-            session.add(chart)
+        except Exception as e:
+            logger.error(f"Error creating chart: {e}")
             return {
-                'id': chart.id,
-                'title': chart.title,
-                'chartType': chart.chart_type,
-                'numericValue': chart.numeric_value,
-                'metric': chart.metric
+                'id': chart_data['id'],
+                'title': chart_data['title'],
+                'chartType': chart_data['chartType'],
+                'numericValue': chart_data['numericValue'],
+                'metric': chart_data['metric']
             }
     
     def update_chart(self, chart_id: str, chart_data: Dict[str, Any]) -> Dict[str, Any]:

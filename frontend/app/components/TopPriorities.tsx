@@ -1,23 +1,54 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import OverviewCard from './OverviewCard';
 
 interface Priority {
   id: string;
-  task: string;
-  deadline: string;
-  status: 'pending' | 'in-progress' | 'completed';
+  title?: string;
+  task?: string;
+  description?: string;
+  deadline?: string;
+  priority?: string;
+  impact?: string;
+  status: 'pending' | 'in-progress' | 'completed' | 'planned';
 }
 
 const TopPriorities: React.FC = () => {
-  const [priorities, setPriorities] = useState<Priority[]>([
-    { id: '1', task: 'Review Q4 financials', deadline: 'Today', status: 'in-progress' },
-    { id: '2', task: 'Update team on project status', deadline: 'Dec 15', status: 'pending' },
-    { id: '3', task: 'Prepare monthly report', deadline: 'Dec 18', status: 'pending' },
-    { id: '4', task: 'Client meeting prep', deadline: 'Tomorrow', status: 'completed' },
-    { id: '5', task: 'Budget planning session', deadline: 'Dec 20', status: 'pending' },
-  ]);
+  const [priorities, setPriorities] = useState<Priority[]>([]);
+  const [, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPriorities = async () => {
+      try {
+        const response = await fetch('/api/priorities');
+        const data = await response.json();
+        
+        if (data.priorities) {
+          // Transform API data to component format
+          const transformedPriorities = data.priorities.map((priority: { id: string; title?: string; task?: string; deadline?: string; status: string }) => ({
+            id: priority.id,
+            task: priority.title || priority.task,
+            deadline: priority.deadline || 'No deadline',
+            status: priority.status === 'planned' ? 'pending' : priority.status
+          }));
+          setPriorities(transformedPriorities);
+        }
+      } catch (error) {
+        console.error('Error fetching priorities:', error);
+        // Keep fallback data
+        setPriorities([
+          { id: '1', task: 'Review Q4 financials', deadline: 'Today', status: 'in-progress' },
+          { id: '2', task: 'Update team on project status', deadline: 'Dec 15', status: 'pending' },
+          { id: '3', task: 'Prepare monthly report', deadline: 'Dec 18', status: 'pending' },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPriorities();
+  }, []);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPriority, setNewPriority] = useState({

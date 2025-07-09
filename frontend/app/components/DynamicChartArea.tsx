@@ -106,56 +106,80 @@ const DynamicChartArea: React.FC = () => {
     setCharts(charts.filter((chart) => chart.id !== id));
   };
 
-  const handleFormSubmit = (formData: ChartFormData) => {
-    // Generate some random data for the new/updated chart
-    const generateRandomData = (chartType: 'pie' | 'bar', metric: string) => {
-      const dataCount = chartType === 'pie' ? 4 : 6;
-      const categories = {
-        revenue: ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty'],
-        user_segments: ['Premium', 'Regular', 'Basic', 'Trial', 'Enterprise', 'Free'],
-        daily_users: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-        orders: ['Online', 'Mobile', 'In-Store', 'Phone', 'Partner', 'Wholesale'],
-        sales: ['Q1', 'Q2', 'Q3', 'Q4', 'Holiday', 'Summer'],
-        category: ['Tech', 'Fashion', 'Food', 'Travel', 'Health', 'Education']
-      };
+  const handleFormSubmit = async (formData: ChartFormData) => {
+    const chartId = editingChart?.id || uuidv4();
+    
+    // Set loading state for this chart
+    setLoadingCharts(prev => ({ ...prev, [chartId]: true }));
+    
+    try {
+      // Fetch chart data from API
+      const response = await fetch(`/api/charts?chartType=${formData.chartType}&numericValue=${formData.numericValue}&metric=${formData.metric}&period=30d`);
+      const result = await response.json();
       
-      const labels = categories[metric as keyof typeof categories] || categories.category;
-      
-             return labels.slice(0, dataCount).map((label) => ({
-         id: label,
-         label: label,
-         value: Math.floor(Math.random() * (metric === 'revenue' ? 50000 : 1000)) + (metric === 'revenue' ? 10000 : 100)
-       }));
-    };
+      let chartData: ChartData[] = [];
+      if (result.success && result.data) {
+        chartData = result.data;
+      } else {
+        // Fallback to generated data if API fails
+        const dataCount = formData.chartType === 'pie' ? 4 : 6;
+        const categories = {
+          revenue: ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty'],
+          user_segments: ['Premium', 'Regular', 'Basic', 'Trial', 'Enterprise', 'Free'],
+          daily_users: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+          orders: ['Online', 'Mobile', 'In-Store', 'Phone', 'Partner', 'Wholesale'],
+          sales: ['Q1', 'Q2', 'Q3', 'Q4', 'Holiday', 'Summer'],
+          category: ['Tech', 'Fashion', 'Food', 'Travel', 'Health', 'Education']
+        };
+        
+        const labels = categories[formData.metric as keyof typeof categories] || categories.category;
+        
+        chartData = labels.slice(0, dataCount).map((label) => ({
+          id: label,
+          label: label,
+          value: Math.floor(Math.random() * (formData.metric === 'revenue' ? 50000 : 1000)) + (formData.metric === 'revenue' ? 10000 : 100)
+        }));
+      }
 
-    if (editingChart) {
-      // Update existing chart
-      const updatedChart = {
-        ...editingChart,
-        title: formData.title,
-        chartType: formData.chartType,
-        numericValue: formData.numericValue,
-        metric: formData.metric,
-        data: generateRandomData(formData.chartType, formData.metric),
-      };
+      if (editingChart) {
+        // Update existing chart
+        const updatedChart = {
+          ...editingChart,
+          title: formData.title,
+          chartType: formData.chartType,
+          numericValue: formData.numericValue,
+          metric: formData.metric,
+          data: chartData,
+        };
+        
+        setCharts(
+          charts.map((chart) =>
+            chart.id === editingChart.id ? updatedChart : chart
+          )
+        );
+      } else {
+        // Add new chart
+        const newChart: Chart = {
+          id: chartId,
+          title: formData.title,
+          chartType: formData.chartType,
+          numericValue: formData.numericValue,
+          metric: formData.metric,
+          data: chartData,
+        };
+        
+        setCharts([...charts, newChart]);
+      }
       
-      setCharts(
-        charts.map((chart) =>
-          chart.id === editingChart.id ? updatedChart : chart
-        )
-      );
-    } else {
-      // Add new chart
-      const newChart: Chart = {
-        id: uuidv4(),
-        title: formData.title,
-        chartType: formData.chartType,
-        numericValue: formData.numericValue,
-        metric: formData.metric,
-        data: generateRandomData(formData.chartType, formData.metric),
-      };
-      
-      setCharts([...charts, newChart]);
+    } catch (error) {
+      console.error('Error creating chart:', error);
+    } finally {
+      // Clear loading state
+      setLoadingCharts(prev => {
+        const newState = { ...prev };
+        delete newState[chartId];
+        return newState;
+      });
     }
     
     setIsFormOpen(false);

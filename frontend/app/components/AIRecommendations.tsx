@@ -1,23 +1,50 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import OverviewCard from './OverviewCard';
 
 interface Recommendation {
-  id: string;
-  text: string;
-  urgency: 'high' | 'medium' | 'low';
-  impact: 'high' | 'medium' | 'low';
+  id?: string;
+  text?: string;
+  urgency?: 'high' | 'medium' | 'low';
+  impact?: 'high' | 'medium' | 'low';
 }
 
 const AIRecommendations: React.FC = () => {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([
-    { id: '1', text: 'Optimize checkout flow', urgency: 'high', impact: 'high' },
-    { id: '2', text: 'Update mobile app UI', urgency: 'medium', impact: 'medium' },
-    { id: '3', text: 'Expand social media presence', urgency: 'low', impact: 'medium' },
-    { id: '4', text: 'Implement customer feedback system', urgency: 'medium', impact: 'high' },
-    { id: '5', text: 'Reduce page load times', urgency: 'high', impact: 'medium' },
-  ]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const response = await fetch('/api/recommendations');
+        const data = await response.json();
+        
+        if (data.recommendations) {
+          // Transform string array to object array
+          const transformedRecommendations = data.recommendations.map((rec: string, index: number) => ({
+            id: (index + 1).toString(),
+            text: rec,
+            urgency: ['high', 'medium', 'low'][index % 3] as 'high' | 'medium' | 'low',
+            impact: ['high', 'medium', 'medium'][index % 3] as 'high' | 'medium' | 'low'
+          }));
+          setRecommendations(transformedRecommendations);
+        }
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
+        // Keep fallback data
+        setRecommendations([
+          { id: '1', text: 'Optimize checkout flow', urgency: 'high', impact: 'high' },
+          { id: '2', text: 'Update mobile app UI', urgency: 'medium', impact: 'medium' },
+          { id: '3', text: 'Expand social media presence', urgency: 'low', impact: 'medium' },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, []);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newRecommendation, setNewRecommendation] = useState({
@@ -85,7 +112,7 @@ const AIRecommendations: React.FC = () => {
         <ul className="h-48 overflow-y-auto space-y-3">
           {recommendations.map((rec) => (
             <li key={rec.id} className="flex items-start gap-2">
-              {getPriorityIcon(rec.urgency, rec.impact)}
+              {getPriorityIcon(rec.urgency || 'medium', rec.impact || 'medium')}
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-800">{rec.text}</p>
                 <div className="flex gap-2 mt-1">
