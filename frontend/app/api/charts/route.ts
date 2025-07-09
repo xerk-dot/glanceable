@@ -2,6 +2,24 @@ import { NextResponse } from 'next/server';
 
 const API_URL = process.env.API_URL || 'http://localhost:5001';
 
+// Type definitions for backend data
+interface BackendDataItem {
+  category?: string;
+  segment?: string;
+  date?: string;
+  x?: string;
+  id?: string;
+  label?: string;
+  value?: number;
+  revenue?: number;
+  total_revenue?: number;
+  user_count?: number;
+  count?: number;
+  active_users?: number;
+  users?: number;
+  [key: string]: unknown;
+}
+
 // Helper function to generate AI-powered chart data (fallback)
 const generateChartData = async (numericValue: string, metric: string, chartType: string) => {
   try {
@@ -83,7 +101,7 @@ export async function GET(request: Request) {
   
   try {
     let endpoint = '';
-    let params = new URLSearchParams();
+    const params = new URLSearchParams();
     
     // Map to backend endpoints
     switch (chartType) {
@@ -113,7 +131,7 @@ export async function GET(request: Request) {
     
     if (backendData.success) {
       // Transform backend data to frontend format
-      const transformedData = backendData.data.map((item: any, index: number) => {
+      const transformedData = backendData.data.map((item: BackendDataItem, index: number) => {
         let id, label, value;
         
         // Handle different data structures based on metric type
@@ -129,7 +147,7 @@ export async function GET(request: Request) {
             label = item.x;
             // Sum revenue values for bar charts
             const keys = Object.keys(item).filter(key => key !== 'x' && typeof item[key] === 'number');
-            value = keys.reduce((sum, key) => sum + (item[key] || 0), 0);
+            value = keys.reduce((sum, key) => sum + (typeof item[key] === 'number' ? item[key] as number : 0), 0);
           } else {
             // Fallback revenue data
             id = `revenue-${index}`;

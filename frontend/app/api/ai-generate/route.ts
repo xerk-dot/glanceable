@@ -102,7 +102,7 @@ Generate ${chartType === 'pie' ? '5' : '7'} realistic labels that make sense for
     try {
       const parsedContent = JSON.parse(generatedContent);
       return NextResponse.json({ data: parsedContent });
-    } catch (parseError) {
+    } catch {
       console.error('Failed to parse AI response:', generatedContent);
       return NextResponse.json(
         { error: 'Invalid AI response format' }, 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ChartCard, { ChartData } from './ChartCard';
 import ChartForm, { ChartFormData } from './ChartForm';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +12,14 @@ interface Chart {
   numericValue: string;
   metric: string;
   data: ChartData[];
+}
+
+interface DatabaseChart {
+  id: string;
+  title: string;
+  chartType: 'pie' | 'bar';
+  numericValue: string;
+  metric: string;
 }
 
 const DynamicChartArea: React.FC = () => {
@@ -29,13 +37,13 @@ const DynamicChartArea: React.FC = () => {
   const [editingChart, setEditingChart] = useState<Chart | null>(null);
 
   // Load charts from database
-  const loadChartsFromDatabase = async () => {
+  const loadChartsFromDatabase = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts`);
       const result = await response.json();
       
       if (result.success) {
-        const chartsWithData = result.charts.map((chart: any) => ({
+        const chartsWithData = result.charts.map((chart: DatabaseChart) => ({
           id: chart.id,
           title: chart.title,
           chartType: chart.chartType,
@@ -111,7 +119,7 @@ const DynamicChartArea: React.FC = () => {
       setLoadingCharts({ '1': true, '2': true });
       defaultCharts.forEach(chart => fetchChartData(chart));
     }
-  };
+  }, []);
 
   // Save chart to database
   const saveChartToDatabase = async (chart: Chart) => {
@@ -201,7 +209,7 @@ const DynamicChartArea: React.FC = () => {
   // Load charts from database on mount
   useEffect(() => {
     loadChartsFromDatabase();
-  }, []); // Only run on mount
+  }, [loadChartsFromDatabase]); // loadChartsFromDatabase is memoized with empty deps
 
   const handleAddChart = () => {
     setEditingChart(null);
