@@ -24,12 +24,21 @@ const KeyMetrics: React.FC = () => {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await fetch('/api/metrics');
-        const data = await response.json();
-        setMetrics(data.metrics);
+        // First try to get user-created metrics from database
+        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/metrics`);
+        const userData = await userResponse.json();
+        
+        if (userData.success && userData.metrics.length > 0) {
+          setMetrics(userData.metrics);
+        } else {
+          // Fallback to system metrics if no user metrics
+          const response = await fetch('/api/metrics');
+          const data = await response.json();
+          setMetrics(data.metrics);
+        }
       } catch (error) {
         console.error('Error fetching metrics:', error);
-        // Fallback to mock data if API fails
+        // Fallback to mock data if both APIs fail
         setMetrics([
           { name: 'NPS Score', value: 72, change: '+3', trend: 'up' },
           { name: 'Customer Sentiment', value: '86%', change: '+2%', trend: 'up' },
@@ -47,7 +56,7 @@ const KeyMetrics: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmitMetric = (e: React.FormEvent) => {
+  const handleSubmitMetric = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMetric.name && newMetric.value) {
       const metric: Metric = {
@@ -56,7 +65,29 @@ const KeyMetrics: React.FC = () => {
         change: newMetric.change || undefined,
         trend: newMetric.trend
       };
-      setMetrics(prev => [...prev, metric]);
+      
+      try {
+        // Save to database
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/metrics`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(metric),
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          setMetrics(prev => [...prev, { ...metric, id: result.metric.id }]);
+        } else {
+          console.error('Failed to save metric:', result.error);
+          setMetrics(prev => [...prev, metric]);
+        }
+      } catch (error) {
+        console.error('Error saving metric:', error);
+        setMetrics(prev => [...prev, metric]);
+      }
+      
       setNewMetric({ name: '', value: '', change: '', trend: 'neutral' });
       setIsModalOpen(false);
     }
@@ -67,24 +98,42 @@ const KeyMetrics: React.FC = () => {
     setNewMetric({ name: '', value: '', change: '', trend: 'neutral' });
   };
 
-  const handleAIGenerate = () => {
-    const metricTemplates = [
-      { name: 'Customer Satisfaction', value: `${Math.floor(Math.random() * 30) + 70}%`, change: `${Math.random() > 0.5 ? '+' : '-'}${Math.floor(Math.random() * 5) + 1}%`, trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.3 ? 'down' : 'neutral' },
-      { name: 'Response Time', value: `${Math.floor(Math.random() * 500) + 100}ms`, change: `${Math.random() > 0.5 ? '+' : '-'}${Math.floor(Math.random() * 20) + 5}ms`, trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.3 ? 'down' : 'neutral' },
-      { name: 'Conversion Rate', value: `${(Math.random() * 10 + 2).toFixed(1)}%`, change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 2).toFixed(1)}%`, trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.3 ? 'down' : 'neutral' },
-      { name: 'User Engagement', value: `${Math.floor(Math.random() * 40) + 60}%`, change: `${Math.random() > 0.5 ? '+' : '-'}${Math.floor(Math.random() * 8) + 1}%`, trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.3 ? 'down' : 'neutral' },
-      { name: 'Feature Adoption', value: `${Math.floor(Math.random() * 50) + 30}%`, change: `${Math.random() > 0.5 ? '+' : '-'}${Math.floor(Math.random() * 12) + 2}%`, trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.3 ? 'down' : 'neutral' },
-      { name: 'API Uptime', value: `${(99 + Math.random()).toFixed(2)}%`, change: `${Math.random() > 0.7 ? '+' : '-'}${(Math.random() * 0.5).toFixed(2)}%`, trend: Math.random() > 0.7 ? 'up' : Math.random() > 0.3 ? 'down' : 'neutral' },
-      { name: 'Load Time', value: `${(Math.random() * 2 + 0.5).toFixed(1)}s`, change: `${Math.random() > 0.5 ? '+' : '-'}${(Math.random() * 0.3).toFixed(1)}s`, trend: Math.random() > 0.6 ? 'up' : Math.random() > 0.3 ? 'down' : 'neutral' },
-    ];
-    
-    const randomMetric = metricTemplates[Math.floor(Math.random() * metricTemplates.length)];
-    setNewMetric({
-      name: randomMetric.name,
-      value: randomMetric.value,
-      change: randomMetric.change,
-      trend: randomMetric.trend as 'up' | 'down' | 'neutral'
-    });
+  const handleAIGenerate = async () => {
+    try {
+      const response = await fetch('/api/ai-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'metric',
+          context: 'dashboard metrics'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate AI content');
+      }
+
+      const result = await response.json();
+      const aiMetric = result.data;
+
+      setNewMetric({
+        name: aiMetric.name,
+        value: aiMetric.value,
+        change: aiMetric.change || '',
+        trend: aiMetric.trend as 'up' | 'down' | 'neutral'
+      });
+    } catch (error) {
+      console.error('AI generation failed:', error);
+      // Fallback to a simple random metric if API fails
+      setNewMetric({
+        name: 'AI Generation Failed',
+        value: 'N/A',
+        change: '',
+        trend: 'neutral'
+      });
+    }
   };
 
   return (
@@ -121,7 +170,19 @@ const KeyMetrics: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">Add New Metric</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add New Metric</h3>
+              <button
+                type="button"
+                onClick={handleAIGenerate}
+                className="bg-purple-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-purple-700 flex items-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                </svg>
+                AI Generate
+              </button>
+            </div>
             <form onSubmit={handleSubmitMetric} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Metric Name</label>

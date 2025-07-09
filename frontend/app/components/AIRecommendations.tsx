@@ -23,12 +23,21 @@ const AIRecommendations: React.FC = () => {
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
-        const response = await fetch('/api/recommendations');
-        const data = await response.json();
-        setRecommendations(data.recommendations);
+        // First try to get user-created recommendations from database
+        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/recommendations`);
+        const userData = await userResponse.json();
+        
+        if (userData.success && userData.recommendations.length > 0) {
+          setRecommendations(userData.recommendations);
+        } else {
+          // Fallback to system recommendations if no user recommendations
+          const response = await fetch('/api/recommendations');
+          const data = await response.json();
+          setRecommendations(data.recommendations);
+        }
       } catch (error) {
         console.error('Error fetching recommendations:', error);
-        // Fallback to mock data if API fails
+        // Fallback to mock data if both APIs fail
         setRecommendations([
           { 
             id: 'rec1', 
@@ -70,7 +79,7 @@ const AIRecommendations: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmitRecommendation = (e: React.FormEvent) => {
+  const handleSubmitRecommendation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newRecommendation.text) {
       const recommendation: Recommendation = {
@@ -79,7 +88,29 @@ const AIRecommendations: React.FC = () => {
         urgency: newRecommendation.urgency,
         impact: newRecommendation.impact
       };
-      setRecommendations(prev => [...prev, recommendation]);
+      
+      try {
+        // Save to database
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/recommendations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(recommendation),
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          setRecommendations(prev => [...prev, result.recommendation]);
+        } else {
+          console.error('Failed to save recommendation:', result.error);
+          setRecommendations(prev => [...prev, recommendation]);
+        }
+      } catch (error) {
+        console.error('Error saving recommendation:', error);
+        setRecommendations(prev => [...prev, recommendation]);
+      }
+      
       setNewRecommendation({ text: '', urgency: 'medium', impact: 'medium' });
       setIsModalOpen(false);
     }
@@ -88,6 +119,42 @@ const AIRecommendations: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setNewRecommendation({ text: '', urgency: 'medium', impact: 'medium' });
+  };
+
+  const handleAIGenerate = async () => {
+    try {
+      const response = await fetch('/api/ai-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'recommendation',
+          context: 'business recommendations and improvements'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate AI content');
+      }
+
+      const result = await response.json();
+      const aiRecommendation = result.data;
+
+      setNewRecommendation({
+        text: aiRecommendation.text,
+        urgency: aiRecommendation.urgency as 'high' | 'medium' | 'low',
+        impact: aiRecommendation.impact as 'high' | 'medium' | 'low'
+      });
+    } catch (error) {
+      console.error('AI generation failed:', error);
+      // Fallback to a simple recommendation if API fails
+      setNewRecommendation({
+        text: 'AI Generation Failed - Please check your API configuration and try again',
+        urgency: 'medium',
+        impact: 'low'
+      });
+    }
   };
 
   return (
@@ -112,7 +179,19 @@ const AIRecommendations: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">Add New Recommendation</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add New Recommendation</h3>
+              <button
+                type="button"
+                onClick={handleAIGenerate}
+                className="bg-purple-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-purple-700 flex items-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                </svg>
+                AI Generate
+              </button>
+            </div>
             <form onSubmit={handleSubmitRecommendation} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Recommendation Text</label>

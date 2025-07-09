@@ -15,6 +15,7 @@ class Config:
     
     # CORS Configuration
     ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+    CORS_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS]
     
     # Cache Configuration
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')

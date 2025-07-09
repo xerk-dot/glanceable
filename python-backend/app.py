@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from database import DatabaseManager
 from chart_service import ChartService
+from user_data_db import user_data_manager
 from config import config
 import logging
 
@@ -20,7 +21,7 @@ config_name = os.getenv('FLASK_ENV', 'development')
 app_config = config[config_name]
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=app_config.CORS_ORIGINS)
 
 # Set database URL from config
 if hasattr(app_config, 'DATABASE_URL'):
@@ -329,6 +330,179 @@ def get_priorities():
             'success': False,
             'error': str(e)
         }), 500
+
+# User Data CRUD Endpoints
+
+@app.route('/api/user/charts', methods=['GET', 'POST'])
+def handle_user_charts():
+    """Get all user charts or create a new chart"""
+    if request.method == 'GET':
+        try:
+            charts = user_data_manager.get_charts()
+            return jsonify({
+                'success': True,
+                'charts': charts
+            })
+        except Exception as e:
+            logger.error(f"Error getting user charts: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    
+    elif request.method == 'POST':
+        try:
+            chart_data = request.json
+            chart = user_data_manager.create_chart(chart_data)
+            return jsonify({
+                'success': True,
+                'chart': chart
+            }), 201
+        except Exception as e:
+            logger.error(f"Error creating user chart: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+@app.route('/api/user/charts/<chart_id>', methods=['PUT', 'DELETE'])
+def handle_user_chart(chart_id):
+    """Update or delete a specific user chart"""
+    if request.method == 'PUT':
+        try:
+            chart_data = request.json
+            chart = user_data_manager.update_chart(chart_id, chart_data)
+            return jsonify({
+                'success': True,
+                'chart': chart
+            })
+        except ValueError as e:
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 404
+        except Exception as e:
+            logger.error(f"Error updating user chart: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            deleted = user_data_manager.delete_chart(chart_id)
+            if deleted:
+                return jsonify({
+                    'success': True,
+                    'message': 'Chart deleted successfully'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Chart not found'
+                }), 404
+        except Exception as e:
+            logger.error(f"Error deleting user chart: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+@app.route('/api/user/metrics', methods=['GET', 'POST'])
+def handle_user_metrics():
+    """Get all user metrics or create a new metric"""
+    if request.method == 'GET':
+        try:
+            metrics = user_data_manager.get_metrics()
+            return jsonify({
+                'success': True,
+                'metrics': metrics
+            })
+        except Exception as e:
+            logger.error(f"Error getting user metrics: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    
+    elif request.method == 'POST':
+        try:
+            metric_data = request.json
+            metric = user_data_manager.create_metric(metric_data)
+            return jsonify({
+                'success': True,
+                'metric': metric
+            }), 201
+        except Exception as e:
+            logger.error(f"Error creating user metric: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+@app.route('/api/user/priorities', methods=['GET', 'POST'])
+def handle_user_priorities():
+    """Get all user priorities or create a new priority"""
+    if request.method == 'GET':
+        try:
+            priorities = user_data_manager.get_priorities()
+            return jsonify({
+                'success': True,
+                'priorities': priorities
+            })
+        except Exception as e:
+            logger.error(f"Error getting user priorities: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    
+    elif request.method == 'POST':
+        try:
+            priority_data = request.json
+            priority = user_data_manager.create_priority(priority_data)
+            return jsonify({
+                'success': True,
+                'priority': priority
+            }), 201
+        except Exception as e:
+            logger.error(f"Error creating user priority: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+
+@app.route('/api/user/recommendations', methods=['GET', 'POST'])
+def handle_user_recommendations():
+    """Get all user recommendations or create a new recommendation"""
+    if request.method == 'GET':
+        try:
+            recommendations = user_data_manager.get_recommendations()
+            return jsonify({
+                'success': True,
+                'recommendations': recommendations
+            })
+        except Exception as e:
+            logger.error(f"Error getting user recommendations: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    
+    elif request.method == 'POST':
+        try:
+            rec_data = request.json
+            recommendation = user_data_manager.create_recommendation(rec_data)
+            return jsonify({
+                'success': True,
+                'recommendation': recommendation
+            }), 201
+        except Exception as e:
+            logger.error(f"Error creating user recommendation: {str(e)}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
 
 @app.errorhandler(404)
 def not_found(error):

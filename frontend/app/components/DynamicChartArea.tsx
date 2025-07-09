@@ -16,24 +16,7 @@ interface Chart {
 
 const DynamicChartArea: React.FC = () => {
   // State for charts
-  const [charts, setCharts] = useState<Chart[]>([
-    {
-      id: '1',
-      title: 'Revenue by Category',
-      chartType: 'pie',
-      numericValue: 'sum',
-      metric: 'user_segments',
-      data: [],
-    },
-    {
-      id: '2',
-      title: 'Daily Users by Segment',
-      chartType: 'pie',
-      numericValue: 'count',
-      metric: 'user_segments',
-      data: [],
-    },
-  ]);
+  const [charts, setCharts] = useState<Chart[]>([]);
 
   // State for loading chart data
   const [loadingCharts, setLoadingCharts] = useState<Record<string, boolean>>({
@@ -44,6 +27,155 @@ const DynamicChartArea: React.FC = () => {
   // State for form modal
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingChart, setEditingChart] = useState<Chart | null>(null);
+
+  // Load charts from database
+  const loadChartsFromDatabase = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts`);
+      const result = await response.json();
+      
+      if (result.success) {
+        const chartsWithData = result.charts.map((chart: any) => ({
+          id: chart.id,
+          title: chart.title,
+          chartType: chart.chartType,
+          numericValue: chart.numericValue,
+          metric: chart.metric,
+          data: []
+        }));
+        setCharts(chartsWithData);
+        
+        // Initialize loading states
+        const loadingStates: Record<string, boolean> = {};
+        chartsWithData.forEach((chart: Chart) => {
+          loadingStates[chart.id] = true;
+        });
+        setLoadingCharts(loadingStates);
+        
+        // Fetch data for each chart
+        chartsWithData.forEach((chart: Chart) => {
+          fetchChartData(chart);
+        });
+      } else {
+        // Initialize with default charts if database is empty
+        const defaultCharts = [
+          {
+            id: '1',
+            title: 'Revenue by Category',
+            chartType: 'pie' as const,
+            numericValue: 'sum',
+            metric: 'revenue',
+            data: [],
+          },
+          {
+            id: '2',
+            title: 'Daily Users by Segment',
+            chartType: 'pie' as const,
+            numericValue: 'count',
+            metric: 'user_segments',
+            data: [],
+          },
+        ];
+        
+        // Save default charts to database
+        for (const chart of defaultCharts) {
+          await saveChartToDatabase(chart);
+        }
+        
+        setCharts(defaultCharts);
+        setLoadingCharts({ '1': true, '2': true });
+        defaultCharts.forEach(chart => fetchChartData(chart));
+      }
+    } catch (error) {
+      console.error('Error loading charts from database:', error);
+      // Fallback to default charts
+      const defaultCharts = [
+        {
+          id: '1',
+          title: 'Revenue by Category',
+          chartType: 'pie' as const,
+          numericValue: 'sum',
+          metric: 'revenue',
+          data: [],
+        },
+        {
+          id: '2',
+          title: 'Daily Users by Segment',
+          chartType: 'pie' as const,
+          numericValue: 'count',
+          metric: 'user_segments',
+          data: [],
+        },
+      ];
+      setCharts(defaultCharts);
+      setLoadingCharts({ '1': true, '2': true });
+      defaultCharts.forEach(chart => fetchChartData(chart));
+    }
+  };
+
+  // Save chart to database
+  const saveChartToDatabase = async (chart: Chart) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: chart.id,
+          title: chart.title,
+          chartType: chart.chartType,
+          numericValue: chart.numericValue,
+          metric: chart.metric
+        }),
+      });
+      const result = await response.json();
+      if (!result.success) {
+        console.error('Failed to save chart to database:', result.error);
+      }
+    } catch (error) {
+      console.error('Error saving chart to database:', error);
+    }
+  };
+
+  // Update chart in database
+  const updateChartInDatabase = async (chart: Chart) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts/${chart.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: chart.title,
+          chartType: chart.chartType,
+          numericValue: chart.numericValue,
+          metric: chart.metric
+        }),
+      });
+      const result = await response.json();
+      if (!result.success) {
+        console.error('Failed to update chart in database:', result.error);
+      }
+    } catch (error) {
+      console.error('Error updating chart in database:', error);
+    }
+  };
+
+  // Delete chart from database
+  const deleteChartFromDatabase = async (chartId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts/${chartId}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      if (!result.success) {
+        console.error('Failed to delete chart from database:', result.error);
+      }
+    } catch (error) {
+      console.error('Error deleting chart from database:', error);
+    }
+  };
 
   // Fetch chart data from API
   const fetchChartData = async (chart: Chart) => {
@@ -66,12 +198,10 @@ const DynamicChartArea: React.FC = () => {
     }
   };
 
-  // Fetch data for initial charts
+  // Load charts from database on mount
   useEffect(() => {
-    charts.forEach((chart) => {
-      fetchChartData(chart);
-    });
-  }, []); // Only run on mount to avoid infinite loop
+    loadChartsFromDatabase();
+  }, []); // Only run on mount
 
   const handleAddChart = () => {
     setEditingChart(null);
@@ -86,7 +216,8 @@ const DynamicChartArea: React.FC = () => {
     }
   };
 
-  const handleDeleteChart = (id: string) => {
+  const handleDeleteChart = async (id: string) => {
+    await deleteChartFromDatabase(id);
     setCharts(charts.filter((chart) => chart.id !== id));
   };
 
@@ -100,6 +231,8 @@ const DynamicChartArea: React.FC = () => {
         numericValue: formData.numericValue,
         metric: formData.metric,
       };
+      
+      await updateChartInDatabase(updatedChart);
       
       setCharts(
         charts.map((chart) =>
@@ -119,6 +252,8 @@ const DynamicChartArea: React.FC = () => {
         metric: formData.metric,
         data: [],
       };
+      
+      await saveChartToDatabase(newChart);
       
       setCharts([...charts, newChart]);
       setLoadingCharts((prev) => ({ ...prev, [newChart.id]: true }));

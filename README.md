@@ -322,23 +322,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Ready to transform your data into insights?** [Get started in 5 minutes](#-quick-start) or [view the live demo](https://glanceable.vercel.app)
 
 *Built with ❤️ for data-driven teams*
-
-
-
-
-
-
-colors (glanceable), dark/light
-
-#00dac6
-
-#100454
-
-
-
-
-add filters
-
-clean
-
-ai 

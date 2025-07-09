@@ -23,12 +23,21 @@ const TopPriorities: React.FC = () => {
   useEffect(() => {
     const fetchPriorities = async () => {
       try {
-        const response = await fetch('/api/priorities');
-        const data = await response.json();
-        setPriorities(data.priorities);
+        // First try to get user-created priorities from database
+        const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/priorities`);
+        const userData = await userResponse.json();
+        
+        if (userData.success && userData.priorities.length > 0) {
+          setPriorities(userData.priorities);
+        } else {
+          // Fallback to system priorities if no user priorities
+          const response = await fetch('/api/priorities');
+          const data = await response.json();
+          setPriorities(data.priorities);
+        }
       } catch (error) {
         console.error('Error fetching priorities:', error);
-        // Fallback to mock data if API fails
+        // Fallback to mock data if both APIs fail
         setPriorities([
           { 
             id: 'task1', 
@@ -74,7 +83,7 @@ const TopPriorities: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmitPriority = (e: React.FormEvent) => {
+  const handleSubmitPriority = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPriority.task && newPriority.deadline) {
       const priority: Priority = {
@@ -83,7 +92,29 @@ const TopPriorities: React.FC = () => {
         deadline: newPriority.deadline,
         status: newPriority.status
       };
-      setPriorities(prev => [...prev, priority]);
+      
+      try {
+        // Save to database
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/priorities`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(priority),
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          setPriorities(prev => [...prev, result.priority]);
+        } else {
+          console.error('Failed to save priority:', result.error);
+          setPriorities(prev => [...prev, priority]);
+        }
+      } catch (error) {
+        console.error('Error saving priority:', error);
+        setPriorities(prev => [...prev, priority]);
+      }
+      
       setNewPriority({ task: '', deadline: '', status: 'pending' });
       setIsModalOpen(false);
     }
@@ -92,6 +123,42 @@ const TopPriorities: React.FC = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setNewPriority({ task: '', deadline: '', status: 'pending' });
+  };
+
+  const handleAIGenerate = async () => {
+    try {
+      const response = await fetch('/api/ai-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'priority',
+          context: 'business priorities and tasks'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate AI content');
+      }
+
+      const result = await response.json();
+      const aiPriority = result.data;
+
+      setNewPriority({
+        task: aiPriority.task,
+        deadline: aiPriority.deadline,
+        status: aiPriority.status as 'pending' | 'in-progress' | 'completed'
+      });
+    } catch (error) {
+      console.error('AI generation failed:', error);
+      // Fallback to a simple task if API fails
+      setNewPriority({
+        task: 'AI Generation Failed - Please try again',
+        deadline: 'Today',
+        status: 'pending'
+      });
+    }
   };
 
   return (
@@ -121,7 +188,19 @@ const TopPriorities: React.FC = () => {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900">Add New Priority</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add New Priority</h3>
+              <button
+                type="button"
+                onClick={handleAIGenerate}
+                className="bg-purple-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-purple-700 flex items-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                </svg>
+                AI Generate
+              </button>
+            </div>
             <form onSubmit={handleSubmitPriority} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Task</label>

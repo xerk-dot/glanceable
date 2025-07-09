@@ -80,7 +80,6 @@ const ChartForm: React.FC<ChartFormProps> = ({
         >
           <option value="pie">Pie Chart</option>
           <option value="bar">Bar Chart</option>
-          <option value="line">Line Chart</option>
         </select>
       </div>
 
