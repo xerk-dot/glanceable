@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import OverviewCard from './OverviewCard';
+import { useFilters, Timeframe, Channel, Topic } from './FilterContext';
 
 interface Priority {
   id: string;
@@ -12,11 +13,15 @@ interface Priority {
   priority?: string;
   impact?: string;
   status: 'pending' | 'in-progress' | 'completed' | 'planned';
+  timeframe?: Timeframe;
+  channel?: Channel;
+  topic?: Topic;
 }
 
 const TopPriorities: React.FC = () => {
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [, setLoading] = useState(true);
+  const { filters } = useFilters();
 
   useEffect(() => {
     const fetchPriorities = async () => {
@@ -36,11 +41,14 @@ const TopPriorities: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching priorities:', error);
-        // Keep fallback data
+        // Keep fallback data with filter properties
         setPriorities([
-          { id: '1', task: 'Review Q4 financials', deadline: 'Today', status: 'in-progress' },
-          { id: '2', task: 'Update team on project status', deadline: 'Dec 15', status: 'pending' },
-          { id: '3', task: 'Prepare monthly report', deadline: 'Dec 18', status: 'pending' },
+          { id: '1', task: 'Review Q4 financials', deadline: 'Today', status: 'in-progress', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.FINANCE },
+          { id: '2', task: 'Update team on project status', deadline: 'Dec 15', status: 'pending', timeframe: Timeframe.WEEK, channel: Channel.EMAIL, topic: Topic.OPERATIONS },
+          { id: '3', task: 'Prepare monthly report', deadline: 'Dec 18', status: 'pending', timeframe: Timeframe.MONTH, channel: Channel.DIRECT, topic: Topic.OPERATIONS },
+          { id: '4', task: 'Optimize mobile checkout', deadline: 'This week', status: 'in-progress', timeframe: Timeframe.WEEK, channel: Channel.MOBILE, topic: Topic.SALES },
+          { id: '5', task: 'Launch social media campaign', deadline: 'Dec 20', status: 'pending', timeframe: Timeframe.MONTH, channel: Channel.SOCIAL, topic: Topic.MARKETING },
+          { id: '6', task: 'Fix server performance issues', deadline: 'Tomorrow', status: 'in-progress', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.TECH },
         ]);
       } finally {
         setLoading(false);
@@ -49,12 +57,23 @@ const TopPriorities: React.FC = () => {
 
     fetchPriorities();
   }, []);
+
+  // Filter priorities based on global filters
+  const filteredPriorities = priorities.filter((priority) => {
+    const timeframeMatch = filters.timeframe === Timeframe.ALL || priority.timeframe === filters.timeframe;
+    const channelMatch = filters.channel === Channel.ALL || priority.channel === filters.channel;
+    const topicMatch = filters.topic === Topic.ALL || priority.topic === filters.topic;
+    return timeframeMatch && channelMatch && topicMatch;
+  });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPriority, setNewPriority] = useState({
     task: '',
     deadline: '',
-    status: 'pending' as 'pending' | 'in-progress' | 'completed'
+    status: 'pending' as 'pending' | 'in-progress' | 'completed',
+    timeframe: Timeframe.WEEK,
+    channel: Channel.DIRECT,
+    topic: Topic.OPERATIONS
   });
 
   const getStatusBadge = (status: string) => {
@@ -82,28 +101,31 @@ const TopPriorities: React.FC = () => {
         id: Date.now().toString(),
         task: newPriority.task,
         deadline: newPriority.deadline,
-        status: newPriority.status
+        status: newPriority.status,
+        timeframe: newPriority.timeframe,
+        channel: newPriority.channel,
+        topic: newPriority.topic
       };
       
       setPriorities(prev => [...prev, priority]);
-      setNewPriority({ task: '', deadline: '', status: 'pending' });
+      setNewPriority({ task: '', deadline: '', status: 'pending', timeframe: Timeframe.WEEK, channel: Channel.DIRECT, topic: Topic.OPERATIONS });
       setIsModalOpen(false);
     }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setNewPriority({ task: '', deadline: '', status: 'pending' });
+    setNewPriority({ task: '', deadline: '', status: 'pending', timeframe: Timeframe.WEEK, channel: Channel.DIRECT, topic: Topic.OPERATIONS });
   };
 
   const handleRandomGenerate = () => {
     const sampleTasks = [
-      { task: 'Schedule team standup', deadline: 'Today' },
-      { task: 'Review code changes', deadline: 'Tomorrow' },
-      { task: 'Update documentation', deadline: 'Dec 22' },
-      { task: 'Client presentation', deadline: 'Next week' },
-      { task: 'Performance review', deadline: 'Dec 25' },
-      { task: 'Budget approval', deadline: 'End of month' },
+      { task: 'Schedule team standup', deadline: 'Today', timeframe: Timeframe.TODAY, channel: Channel.EMAIL, topic: Topic.OPERATIONS },
+      { task: 'Review code changes', deadline: 'Tomorrow', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.TECH },
+      { task: 'Update documentation', deadline: 'Dec 22', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.PRODUCT },
+      { task: 'Client presentation', deadline: 'Next week', timeframe: Timeframe.WEEK, channel: Channel.DIRECT, topic: Topic.SALES },
+      { task: 'Performance review', deadline: 'Dec 25', timeframe: Timeframe.MONTH, channel: Channel.EMAIL, topic: Topic.OPERATIONS },
+      { task: 'Budget approval', deadline: 'End of month', timeframe: Timeframe.MONTH, channel: Channel.DIRECT, topic: Topic.FINANCE },
     ];
     
     const randomTask = sampleTasks[Math.floor(Math.random() * sampleTasks.length)];
@@ -113,7 +135,10 @@ const TopPriorities: React.FC = () => {
     setNewPriority({
       task: randomTask.task,
       deadline: randomTask.deadline,
-      status: randomStatus
+      status: randomStatus,
+      timeframe: randomTask.timeframe,
+      channel: randomTask.channel,
+      topic: randomTask.topic
     });
   };
 
@@ -121,17 +146,23 @@ const TopPriorities: React.FC = () => {
     <>
       <OverviewCard title="Top Priorities" variant="priorities" onAdd={handleAddPriority}>
         <ul className="h-48 overflow-y-auto space-y-3">
-          {priorities.map((priority) => (
-            <li key={priority.id} className="flex flex-col gap-1">
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-gray-800">{priority.task}</span>
-                {getStatusBadge(priority.status)}
-              </div>
-              <div className="text-xs text-gray-600">
-                Due: {priority.deadline}
-              </div>
+          {filteredPriorities.length > 0 ? (
+            filteredPriorities.map((priority) => (
+              <li key={priority.id} className="flex flex-col gap-1">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-gray-800">{priority.task}</span>
+                  {getStatusBadge(priority.status)}
+                </div>
+                <div className="text-xs text-gray-600">
+                  Due: {priority.deadline}
+                </div>
+              </li>
+            ))
+          ) : (
+            <li className="text-sm text-gray-500 text-center py-8">
+              No priorities match the selected filters.
             </li>
-          ))}
+          )}
         </ul>
       </OverviewCard>
 
@@ -185,6 +216,53 @@ const TopPriorities: React.FC = () => {
                   <option value="in-progress">In Progress</option>
                   <option value="completed">Completed</option>
                 </select>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Timeframe</label>
+                  <select
+                    value={newPriority.timeframe}
+                    onChange={(e) => setNewPriority(prev => ({ ...prev, timeframe: e.target.value as Timeframe }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Timeframe.TODAY}>Today</option>
+                    <option value={Timeframe.WEEK}>This Week</option>
+                    <option value={Timeframe.MONTH}>This Month</option>
+                    <option value={Timeframe.QUARTER}>This Quarter</option>
+                    <option value={Timeframe.YEAR}>This Year</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel</label>
+                  <select
+                    value={newPriority.channel}
+                    onChange={(e) => setNewPriority(prev => ({ ...prev, channel: e.target.value as Channel }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Channel.WEB}>Web</option>
+                    <option value={Channel.MOBILE}>Mobile</option>
+                    <option value={Channel.EMAIL}>Email</option>
+                    <option value={Channel.SOCIAL}>Social</option>
+                    <option value={Channel.DIRECT}>Direct</option>
+                    <option value={Channel.ORGANIC}>Organic</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+                  <select
+                    value={newPriority.topic}
+                    onChange={(e) => setNewPriority(prev => ({ ...prev, topic: e.target.value as Topic }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Topic.SALES}>Sales</option>
+                    <option value={Topic.MARKETING}>Marketing</option>
+                    <option value={Topic.PRODUCT}>Product</option>
+                    <option value={Topic.CUSTOMER_SERVICE}>Customer Service</option>
+                    <option value={Topic.OPERATIONS}>Operations</option>
+                    <option value={Topic.FINANCE}>Finance</option>
+                    <option value={Topic.TECH}>Technology</option>
+                  </select>
+                </div>
               </div>
               <div className="flex justify-end gap-3">
                 <button

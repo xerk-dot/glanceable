@@ -21,6 +21,9 @@ class UserChart(Base):
     chart_type = Column(String, nullable=False)  # 'pie' | 'bar'
     numeric_value = Column(String, nullable=False)
     metric = Column(String, nullable=False)
+    timeframe = Column(String, nullable=True, default='month')
+    channel = Column(String, nullable=True, default='web')
+    topic = Column(String, nullable=True, default='sales')
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -32,6 +35,9 @@ class UserMetric(Base):
     value = Column(String, nullable=False)
     change = Column(String, nullable=True)
     trend = Column(String, nullable=False)  # 'up' | 'down' | 'neutral'
+    timeframe = Column(String, nullable=True, default='month')
+    channel = Column(String, nullable=True, default='web')
+    topic = Column(String, nullable=True, default='sales')
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class UserPriority(Base):
@@ -41,6 +47,9 @@ class UserPriority(Base):
     task = Column(Text, nullable=False)
     deadline = Column(String, nullable=False)
     status = Column(String, nullable=False)  # 'pending' | 'in-progress' | 'completed'
+    timeframe = Column(String, nullable=True, default='week')
+    channel = Column(String, nullable=True, default='direct')
+    topic = Column(String, nullable=True, default='operations')
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -51,6 +60,9 @@ class UserRecommendation(Base):
     text = Column(Text, nullable=False)
     urgency = Column(String, nullable=False)  # 'high' | 'medium' | 'low'
     impact = Column(String, nullable=False)   # 'high' | 'medium' | 'low'
+    timeframe = Column(String, nullable=True, default='week')
+    channel = Column(String, nullable=True, default='web')
+    topic = Column(String, nullable=True, default='sales')
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class UserDataManager:
@@ -210,6 +222,9 @@ class UserDataManager:
                     'value': metric.value,
                     'change': metric.change,
                     'trend': metric.trend,
+                    'timeframe': metric.timeframe,
+                    'channel': metric.channel,
+                    'topic': metric.topic,
                     'created_at': metric.created_at.isoformat()
                 }
                 for metric in metrics
@@ -225,7 +240,10 @@ class UserDataManager:
                 name=metric_data['name'],
                 value=metric_data['value'],
                 change=metric_data.get('change'),
-                trend=metric_data['trend']
+                trend=metric_data['trend'],
+                timeframe=metric_data.get('timeframe', 'month'),
+                channel=metric_data.get('channel', 'web'),
+                topic=metric_data.get('topic', 'sales')
             )
             session.add(metric)
             return {
@@ -233,7 +251,10 @@ class UserDataManager:
                 'name': metric.name,
                 'value': metric.value,
                 'change': metric.change,
-                'trend': metric.trend
+                'trend': metric.trend,
+                'timeframe': metric.timeframe,
+                'channel': metric.channel,
+                'topic': metric.topic
             }
     
     # Priority operations
@@ -247,6 +268,9 @@ class UserDataManager:
                     'task': priority.task,
                     'deadline': priority.deadline,
                     'status': priority.status,
+                    'timeframe': priority.timeframe,
+                    'channel': priority.channel,
+                    'topic': priority.topic,
                     'created_at': priority.created_at.isoformat()
                 }
                 for priority in priorities
@@ -259,14 +283,20 @@ class UserDataManager:
                 id=priority_data['id'],
                 task=priority_data['task'],
                 deadline=priority_data['deadline'],
-                status=priority_data['status']
+                status=priority_data['status'],
+                timeframe=priority_data.get('timeframe', 'week'),
+                channel=priority_data.get('channel', 'direct'),
+                topic=priority_data.get('topic', 'operations')
             )
             session.add(priority)
             return {
                 'id': priority.id,
                 'task': priority.task,
                 'deadline': priority.deadline,
-                'status': priority.status
+                'status': priority.status,
+                'timeframe': priority.timeframe,
+                'channel': priority.channel,
+                'topic': priority.topic
             }
     
     # Recommendation operations
@@ -280,6 +310,9 @@ class UserDataManager:
                     'text': rec.text,
                     'urgency': rec.urgency,
                     'impact': rec.impact,
+                    'timeframe': rec.timeframe,
+                    'channel': rec.channel,
+                    'topic': rec.topic,
                     'created_at': rec.created_at.isoformat()
                 }
                 for rec in recommendations
@@ -292,14 +325,20 @@ class UserDataManager:
                 id=rec_data['id'],
                 text=rec_data['text'],
                 urgency=rec_data['urgency'],
-                impact=rec_data['impact']
+                impact=rec_data['impact'],
+                timeframe=rec_data.get('timeframe', 'week'),
+                channel=rec_data.get('channel', 'web'),
+                topic=rec_data.get('topic', 'sales')
             )
             session.add(recommendation)
             return {
                 'id': recommendation.id,
                 'text': recommendation.text,
                 'urgency': recommendation.urgency,
-                'impact': recommendation.impact
+                'impact': recommendation.impact,
+                'timeframe': recommendation.timeframe,
+                'channel': recommendation.channel,
+                'topic': recommendation.topic
             }
 
 # Global instance

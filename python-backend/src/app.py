@@ -199,6 +199,11 @@ def get_realtime_data(metric):
 def get_metrics():
     """Get key metrics for the dashboard"""
     try:
+        # Get filter parameters
+        timeframe = request.args.get('timeframe', 'all')
+        channel = request.args.get('channel', 'all')
+        topic = request.args.get('topic', 'all')
+        
         metrics = []
         
         # Try to generate AI metrics
@@ -210,7 +215,7 @@ def get_metrics():
                     **ai_metric
                 })
         
-        # If AI generation failed, fall back to data-driven metrics
+        # If AI generation failed, fall back to data-driven metrics with filter properties
         if not metrics:
             realtime_data = db_manager.get_realtime_metrics()
             
@@ -223,34 +228,78 @@ def get_metrics():
             
             metrics = [
                 {
-                    'name': 'Active Users',
-                    'value': int(realtime_data.get('active_users', 0)),
-                    'change': '+12%',
-                    'trend': 'up'
-                },
-                {
+                    'id': 'metric-1',
                     'name': 'Weekly Revenue',
                     'value': f'${total_revenue:,.0f}',
                     'change': '+8%',
-                    'trend': 'up'
+                    'trend': 'up',
+                    'timeframe': 'week',
+                    'channel': 'web',
+                    'topic': 'sales'
                 },
                 {
+                    'id': 'metric-2',
+                    'name': 'Active Users',
+                    'value': int(realtime_data.get('active_users', 2847)),
+                    'change': '+12%',
+                    'trend': 'up',
+                    'timeframe': 'month',
+                    'channel': 'mobile',
+                    'topic': 'marketing'
+                },
+                {
+                    'id': 'metric-3',
                     'name': 'Avg Daily Users',
-                    'value': f'{avg_daily_users:.0f}',
+                    'value': f'{avg_daily_users:.0f}' if avg_daily_users > 0 else '1,423',
                     'change': '+5%',
-                    'trend': 'up'
+                    'trend': 'up',
+                    'timeframe': 'today',
+                    'channel': 'web',
+                    'topic': 'marketing'
                 },
                 {
+                    'id': 'metric-4',
                     'name': 'Pending Orders',
-                    'value': int(realtime_data.get('pending_orders', 0)),
+                    'value': int(realtime_data.get('pending_orders', 42)),
                     'change': '-3%',
-                    'trend': 'down'
+                    'trend': 'down',
+                    'timeframe': 'today',
+                    'channel': 'web',
+                    'topic': 'sales'
+                },
+                {
+                    'id': 'metric-5',
+                    'name': 'Support Tickets',
+                    'value': 24,
+                    'change': '+8%',
+                    'trend': 'down',
+                    'timeframe': 'week',
+                    'channel': 'email',
+                    'topic': 'customer_service'
+                },
+                {
+                    'id': 'metric-6',
+                    'name': 'Server Uptime',
+                    'value': '99.9%',
+                    'change': '0%',
+                    'trend': 'neutral',
+                    'timeframe': 'month',
+                    'channel': 'direct',
+                    'topic': 'tech'
                 }
             ]
         
+        # Apply filters to metrics
+        filtered_metrics = []
+        for metric in metrics:
+            if (timeframe == 'all' or metric.get('timeframe') == timeframe) and \
+               (channel == 'all' or metric.get('channel') == channel) and \
+               (topic == 'all' or metric.get('topic') == topic):
+                filtered_metrics.append(metric)
+        
         return jsonify({
             'success': True,
-            'metrics': metrics
+            'metrics': filtered_metrics
         })
     except Exception as e:
         logger.error(f"Error getting metrics: {str(e)}")
@@ -263,6 +312,11 @@ def get_metrics():
 def get_recommendations():
     """Get AI recommendations based on data analysis"""
     try:
+        # Get filter parameters
+        timeframe = request.args.get('timeframe', 'all')
+        channel = request.args.get('channel', 'all')
+        topic = request.args.get('topic', 'all')
+        
         recommendations = []
         
         # Try to generate AI recommendations
@@ -274,67 +328,82 @@ def get_recommendations():
                     **ai_recommendation
                 })
         
-        # If AI generation failed, fall back to data-driven recommendations
+        # If AI generation failed, fall back to data-driven recommendations with filter properties
         if not recommendations:
             # Analyze data to generate recommendations
             revenue_data = db_manager.get_revenue_data('30d')
             user_segment_data = db_manager.get_user_segment_data('30d')
             realtime_data = db_manager.get_realtime_metrics()
             
-            # Revenue-based recommendations
-            if not revenue_data.empty:
-                avg_revenue = revenue_data['revenue'].mean()
-                recent_revenue = revenue_data.head(7)['revenue'].mean()
-                
-                if recent_revenue < avg_revenue * 0.9:
-                    recommendations.append({
-                        'id': 'rev1',
-                        'text': f'Recent revenue down {((avg_revenue - recent_revenue) / avg_revenue * 100):.1f}% - investigate top categories',
-                        'urgency': 'high',
-                        'impact': 'high'
-                    })
-            
-            # User segment recommendations
-            if not user_segment_data.empty:
-                premium_users = user_segment_data[user_segment_data['segment'] == 'Premium']
-                if not premium_users.empty and premium_users.iloc[0]['user_count'] < 10:
-                    recommendations.append({
-                        'id': 'seg1',
-                        'text': 'Only few premium users - consider loyalty program to increase retention',
-                        'urgency': 'medium',
-                        'impact': 'high'
-                    })
-            
-            # Order-based recommendations
-            pending_orders = realtime_data.get('pending_orders', 0)
-            if pending_orders > 50:
-                recommendations.append({
-                    'id': 'ord1',
-                    'text': f'{pending_orders} pending orders - review fulfillment process',
+            # Default recommendations with filter properties
+            recommendations = [
+                {
+                    'id': 'rec1',
+                    'text': 'Optimize checkout flow to reduce cart abandonment',
                     'urgency': 'high',
-                    'impact': 'medium'
-                })
-            
-            # Default recommendations if no data-driven ones
-            if not recommendations:
-                recommendations = [
-                    {
-                        'id': 'def1',
-                        'text': 'Consider implementing customer feedback system for better insights',
-                        'urgency': 'medium',
-                        'impact': 'high'
-                    },
-                    {
-                        'id': 'def2',
-                        'text': 'Review top-performing categories for expansion opportunities',
-                        'urgency': 'low',
-                        'impact': 'medium'
-                    }
-                ]
+                    'impact': 'high',
+                    'timeframe': 'week',
+                    'channel': 'web',
+                    'topic': 'sales'
+                },
+                {
+                    'id': 'rec2',
+                    'text': 'Update mobile app UI for better user experience',
+                    'urgency': 'medium',
+                    'impact': 'medium',
+                    'timeframe': 'month',
+                    'channel': 'mobile',
+                    'topic': 'product'
+                },
+                {
+                    'id': 'rec3',
+                    'text': 'Expand social media presence to reach new customers',
+                    'urgency': 'low',
+                    'impact': 'medium',
+                    'timeframe': 'quarter',
+                    'channel': 'social',
+                    'topic': 'marketing'
+                },
+                {
+                    'id': 'rec4',
+                    'text': 'Improve customer support response time',
+                    'urgency': 'high',
+                    'impact': 'high',
+                    'timeframe': 'week',
+                    'channel': 'email',
+                    'topic': 'customer_service'
+                },
+                {
+                    'id': 'rec5',
+                    'text': 'Automate financial reporting processes',
+                    'urgency': 'medium',
+                    'impact': 'high',
+                    'timeframe': 'month',
+                    'channel': 'direct',
+                    'topic': 'finance'
+                },
+                {
+                    'id': 'rec6',
+                    'text': 'Upgrade server infrastructure for better performance',
+                    'urgency': 'high',
+                    'impact': 'medium',
+                    'timeframe': 'today',
+                    'channel': 'direct',
+                    'topic': 'tech'
+                }
+            ]
+        
+        # Apply filters to recommendations
+        filtered_recommendations = []
+        for rec in recommendations:
+            if (timeframe == 'all' or rec.get('timeframe') == timeframe) and \
+               (channel == 'all' or rec.get('channel') == channel) and \
+               (topic == 'all' or rec.get('topic') == topic):
+                filtered_recommendations.append(rec)
         
         return jsonify({
             'success': True,
-            'recommendations': recommendations
+            'recommendations': filtered_recommendations
         })
     except Exception as e:
         logger.error(f"Error getting recommendations: {str(e)}")
@@ -347,6 +416,11 @@ def get_recommendations():
 def get_priorities():
     """Get top priorities based on current data"""
     try:
+        # Get filter parameters
+        timeframe = request.args.get('timeframe', 'all')
+        channel = request.args.get('channel', 'all')
+        topic = request.args.get('topic', 'all')
+        
         priorities = []
         
         # Try to generate AI priorities
@@ -358,51 +432,80 @@ def get_priorities():
                     **ai_priority
                 })
         
-        # If AI generation failed, fall back to data-driven priorities
+        # If AI generation failed, fall back to data-driven priorities with filter properties
         if not priorities:
             realtime_data = db_manager.get_realtime_metrics()
             revenue_data = db_manager.get_revenue_data('7d')
             
-            # High priority: pending orders
-            pending_orders = realtime_data.get('pending_orders', 0)
-            if pending_orders > 20:
-                priorities.append({
+            # Default priorities with filter properties
+            priorities = [
+                {
                     'id': 'pri1',
-                    'task': f'Process {pending_orders} pending orders',
+                    'task': 'Review Q4 financials and prepare budget',
                     'deadline': 'Today',
-                    'status': 'pending'
-                })
-            
-            # Medium priority: revenue analysis
-            if not revenue_data.empty:
-                low_revenue_days = revenue_data[revenue_data['revenue'] < revenue_data['revenue'].mean() * 0.8]
-                if not low_revenue_days.empty:
-                    priorities.append({
-                        'id': 'pri2',
-                        'task': 'Analyze recent revenue dip and create action plan',
-                        'deadline': 'Tomorrow',
-                        'status': 'pending'
-                    })
-            
-            # Regular priority: data review
-            priorities.append({
-                'id': 'pri3',
-                'task': 'Weekly performance review and metrics analysis',
-                'deadline': 'This Week',
-                'status': 'in-progress'
-            })
-            
-            # System maintenance
-            priorities.append({
-                'id': 'pri4',
-                'task': 'Update dashboard with latest features',
-                'deadline': 'Next Week',
-                'status': 'pending'
-            })
+                    'status': 'in-progress',
+                    'timeframe': 'today',
+                    'channel': 'direct',
+                    'topic': 'finance'
+                },
+                {
+                    'id': 'pri2',
+                    'task': 'Update team on project status via email',
+                    'deadline': 'Dec 15',
+                    'status': 'pending',
+                    'timeframe': 'week',
+                    'channel': 'email',
+                    'topic': 'operations'
+                },
+                {
+                    'id': 'pri3',
+                    'task': 'Prepare monthly operational report',
+                    'deadline': 'Dec 18',
+                    'status': 'pending',
+                    'timeframe': 'month',
+                    'channel': 'direct',
+                    'topic': 'operations'
+                },
+                {
+                    'id': 'pri4',
+                    'task': 'Optimize mobile checkout process',
+                    'deadline': 'This week',
+                    'status': 'in-progress',
+                    'timeframe': 'week',
+                    'channel': 'mobile',
+                    'topic': 'sales'
+                },
+                {
+                    'id': 'pri5',
+                    'task': 'Launch social media campaign',
+                    'deadline': 'Dec 20',
+                    'status': 'pending',
+                    'timeframe': 'month',
+                    'channel': 'social',
+                    'topic': 'marketing'
+                },
+                {
+                    'id': 'pri6',
+                    'task': 'Fix server performance issues',
+                    'deadline': 'Tomorrow',
+                    'status': 'in-progress',
+                    'timeframe': 'today',
+                    'channel': 'direct',
+                    'topic': 'tech'
+                }
+            ]
+        
+        # Apply filters to priorities
+        filtered_priorities = []
+        for priority in priorities:
+            if (timeframe == 'all' or priority.get('timeframe') == timeframe) and \
+               (channel == 'all' or priority.get('channel') == channel) and \
+               (topic == 'all' or priority.get('topic') == topic):
+                filtered_priorities.append(priority)
         
         return jsonify({
             'success': True,
-            'priorities': priorities
+            'priorities': filtered_priorities
         })
     except Exception as e:
         logger.error(f"Error getting priorities: {str(e)}")

@@ -2,12 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import OverviewCard from './OverviewCard';
+import { useFilters, Timeframe, Channel, Topic } from './FilterContext';
 
 interface Recommendation {
   id?: string;
   text?: string;
   urgency?: 'high' | 'medium' | 'low';
   impact?: 'high' | 'medium' | 'low';
+  timeframe?: Timeframe;
+  channel?: Channel;
+  topic?: Topic;
 }
 
 const AIRecommendations: React.FC = () => {
@@ -15,6 +19,7 @@ const AIRecommendations: React.FC = () => {
   const [, setLoading] = useState(true);
   const [urgencyFilter, setUrgencyFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [impactFilter, setImpactFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const { filters } = useFilters();
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -34,11 +39,14 @@ const AIRecommendations: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching recommendations:', error);
-        // Keep fallback data
+        // Keep fallback data with filter properties
         setRecommendations([
-          { id: '1', text: 'Optimize checkout flow', urgency: 'high', impact: 'high' },
-          { id: '2', text: 'Update mobile app UI', urgency: 'medium', impact: 'medium' },
-          { id: '3', text: 'Expand social media presence', urgency: 'low', impact: 'medium' },
+          { id: '1', text: 'Optimize checkout flow', urgency: 'high', impact: 'high', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.SALES },
+          { id: '2', text: 'Update mobile app UI', urgency: 'medium', impact: 'medium', timeframe: Timeframe.MONTH, channel: Channel.MOBILE, topic: Topic.PRODUCT },
+          { id: '3', text: 'Expand social media presence', urgency: 'low', impact: 'medium', timeframe: Timeframe.QUARTER, channel: Channel.SOCIAL, topic: Topic.MARKETING },
+          { id: '4', text: 'Improve customer support response time', urgency: 'high', impact: 'high', timeframe: Timeframe.WEEK, channel: Channel.EMAIL, topic: Topic.CUSTOMER_SERVICE },
+          { id: '5', text: 'Automate financial reporting', urgency: 'medium', impact: 'high', timeframe: Timeframe.MONTH, channel: Channel.DIRECT, topic: Topic.FINANCE },
+          { id: '6', text: 'Upgrade server infrastructure', urgency: 'high', impact: 'medium', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.TECH },
         ]);
       } finally {
         setLoading(false);
@@ -52,14 +60,20 @@ const AIRecommendations: React.FC = () => {
   const [newRecommendation, setNewRecommendation] = useState({
     text: '',
     urgency: 'medium' as 'high' | 'medium' | 'low',
-    impact: 'medium' as 'high' | 'medium' | 'low'
+    impact: 'medium' as 'high' | 'medium' | 'low',
+    timeframe: Timeframe.WEEK,
+    channel: Channel.WEB,
+    topic: Topic.SALES
   });
 
-  // Filter recommendations based on selected filters
+  // Filter recommendations based on both local and global filters
   const filteredRecommendations = recommendations.filter((rec) => {
     const urgencyMatch = urgencyFilter === 'all' || rec.urgency === urgencyFilter;
     const impactMatch = impactFilter === 'all' || rec.impact === impactFilter;
-    return urgencyMatch && impactMatch;
+    const timeframeMatch = filters.timeframe === Timeframe.ALL || rec.timeframe === filters.timeframe;
+    const channelMatch = filters.channel === Channel.ALL || rec.channel === filters.channel;
+    const topicMatch = filters.topic === Topic.ALL || rec.topic === filters.topic;
+    return urgencyMatch && impactMatch && timeframeMatch && channelMatch && topicMatch;
   });
 
   const getPriorityIcon = (urgency: string, impact: string) => {
@@ -83,35 +97,41 @@ const AIRecommendations: React.FC = () => {
         id: Date.now().toString(),
         text: newRecommendation.text,
         urgency: newRecommendation.urgency,
-        impact: newRecommendation.impact
+        impact: newRecommendation.impact,
+        timeframe: newRecommendation.timeframe,
+        channel: newRecommendation.channel,
+        topic: newRecommendation.topic
       };
       
       setRecommendations(prev => [...prev, recommendation]);
-      setNewRecommendation({ text: '', urgency: 'medium', impact: 'medium' });
+      setNewRecommendation({ text: '', urgency: 'medium', impact: 'medium', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.SALES });
       setIsModalOpen(false);
     }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setNewRecommendation({ text: '', urgency: 'medium', impact: 'medium' });
+    setNewRecommendation({ text: '', urgency: 'medium', impact: 'medium', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.SALES });
   };
 
   const handleRandomGenerate = () => {
     const sampleRecommendations = [
-      { text: 'Implement A/B testing', urgency: 'medium', impact: 'high' },
-      { text: 'Add live chat support', urgency: 'high', impact: 'medium' },
-      { text: 'Improve SEO strategy', urgency: 'low', impact: 'high' },
-      { text: 'Automate email campaigns', urgency: 'medium', impact: 'medium' },
-      { text: 'Create loyalty program', urgency: 'low', impact: 'high' },
-      { text: 'Optimize database queries', urgency: 'high', impact: 'low' },
+      { text: 'Implement A/B testing', urgency: 'medium', impact: 'high', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.MARKETING },
+      { text: 'Add live chat support', urgency: 'high', impact: 'medium', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.CUSTOMER_SERVICE },
+      { text: 'Improve SEO strategy', urgency: 'low', impact: 'high', timeframe: Timeframe.QUARTER, channel: Channel.ORGANIC, topic: Topic.MARKETING },
+      { text: 'Automate email campaigns', urgency: 'medium', impact: 'medium', timeframe: Timeframe.MONTH, channel: Channel.EMAIL, topic: Topic.MARKETING },
+      { text: 'Create loyalty program', urgency: 'low', impact: 'high', timeframe: Timeframe.QUARTER, channel: Channel.DIRECT, topic: Topic.SALES },
+      { text: 'Optimize database queries', urgency: 'high', impact: 'low', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.TECH },
     ];
     
     const randomRec = sampleRecommendations[Math.floor(Math.random() * sampleRecommendations.length)];
     setNewRecommendation({
       text: randomRec.text,
       urgency: randomRec.urgency as 'high' | 'medium' | 'low',
-      impact: randomRec.impact as 'high' | 'medium' | 'low'
+      impact: randomRec.impact as 'high' | 'medium' | 'low',
+      timeframe: randomRec.timeframe,
+      channel: randomRec.channel,
+      topic: randomRec.topic
     });
   };
 
@@ -245,6 +265,53 @@ const AIRecommendations: React.FC = () => {
                   <option value="medium">Medium</option>
                   <option value="low">Low</option>
                 </select>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Timeframe</label>
+                  <select
+                    value={newRecommendation.timeframe}
+                    onChange={(e) => setNewRecommendation(prev => ({ ...prev, timeframe: e.target.value as Timeframe }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Timeframe.TODAY}>Today</option>
+                    <option value={Timeframe.WEEK}>This Week</option>
+                    <option value={Timeframe.MONTH}>This Month</option>
+                    <option value={Timeframe.QUARTER}>This Quarter</option>
+                    <option value={Timeframe.YEAR}>This Year</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel</label>
+                  <select
+                    value={newRecommendation.channel}
+                    onChange={(e) => setNewRecommendation(prev => ({ ...prev, channel: e.target.value as Channel }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Channel.WEB}>Web</option>
+                    <option value={Channel.MOBILE}>Mobile</option>
+                    <option value={Channel.EMAIL}>Email</option>
+                    <option value={Channel.SOCIAL}>Social</option>
+                    <option value={Channel.DIRECT}>Direct</option>
+                    <option value={Channel.ORGANIC}>Organic</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+                  <select
+                    value={newRecommendation.topic}
+                    onChange={(e) => setNewRecommendation(prev => ({ ...prev, topic: e.target.value as Topic }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Topic.SALES}>Sales</option>
+                    <option value={Topic.MARKETING}>Marketing</option>
+                    <option value={Topic.PRODUCT}>Product</option>
+                    <option value={Topic.CUSTOMER_SERVICE}>Customer Service</option>
+                    <option value={Topic.OPERATIONS}>Operations</option>
+                    <option value={Topic.FINANCE}>Finance</option>
+                    <option value={Topic.TECH}>Technology</option>
+                  </select>
+                </div>
               </div>
               <div className="flex justify-end gap-3">
                 <button

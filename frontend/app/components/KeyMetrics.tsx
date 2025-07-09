@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import OverviewCard from './OverviewCard';
+import { useFilters, Timeframe, Channel, Topic } from './FilterContext';
 
 interface Metric {
   id?: string;
@@ -11,11 +12,15 @@ interface Metric {
   change?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
   trend?: 'up' | 'down' | 'neutral';
+  timeframe?: Timeframe;
+  channel?: Channel;
+  topic?: Topic;
 }
 
 const KeyMetrics: React.FC = () => {
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [, setLoading] = useState(true);
+  const { filters } = useFilters();
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -37,12 +42,14 @@ const KeyMetrics: React.FC = () => {
         }
       } catch (error) {
         console.error('Error fetching metrics:', error);
-        // Keep fallback data
+        // Keep fallback data with filter properties
         setMetrics([
-          { name: 'Revenue', value: '$45.2K', change: '+12%', trend: 'up' },
-          { name: 'Users', value: '2,847', change: '+5%', trend: 'up' },
-          { name: 'Orders', value: '182', change: '-3%', trend: 'down' },
-          { name: 'Conversion', value: '3.2%', change: '+0.8%', trend: 'up' },
+          { name: 'Revenue', value: '$45.2K', change: '+12%', trend: 'up', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.SALES },
+          { name: 'Users', value: '2,847', change: '+5%', trend: 'up', timeframe: Timeframe.WEEK, channel: Channel.MOBILE, topic: Topic.MARKETING },
+          { name: 'Orders', value: '182', change: '-3%', trend: 'down', timeframe: Timeframe.TODAY, channel: Channel.WEB, topic: Topic.SALES },
+          { name: 'Conversion', value: '3.2%', change: '+0.8%', trend: 'up', timeframe: Timeframe.MONTH, channel: Channel.ORGANIC, topic: Topic.MARKETING },
+          { name: 'Support Tickets', value: '24', change: '+8%', trend: 'down', timeframe: Timeframe.WEEK, channel: Channel.EMAIL, topic: Topic.CUSTOMER_SERVICE },
+          { name: 'Server Uptime', value: '99.9%', change: '0%', trend: 'neutral', timeframe: Timeframe.MONTH, channel: Channel.DIRECT, topic: Topic.TECH },
         ]);
       } finally {
         setLoading(false);
@@ -51,13 +58,24 @@ const KeyMetrics: React.FC = () => {
 
     fetchMetrics();
   }, []);
+
+  // Filter metrics based on global filters
+  const filteredMetrics = metrics.filter((metric) => {
+    const timeframeMatch = filters.timeframe === Timeframe.ALL || metric.timeframe === filters.timeframe;
+    const channelMatch = filters.channel === Channel.ALL || metric.channel === filters.channel;
+    const topicMatch = filters.topic === Topic.ALL || metric.topic === filters.topic;
+    return timeframeMatch && channelMatch && topicMatch;
+  });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newMetric, setNewMetric] = useState({
     name: '',
     value: '',
     change: '',
-    trend: 'neutral' as 'up' | 'down' | 'neutral'
+    trend: 'neutral' as 'up' | 'down' | 'neutral',
+    timeframe: Timeframe.MONTH,
+    channel: Channel.WEB,
+    topic: Topic.SALES
   });
 
   const handleAddMetric = () => {
@@ -72,28 +90,31 @@ const KeyMetrics: React.FC = () => {
         name: newMetric.name,
         value: newMetric.value,
         change: newMetric.change || undefined,
-        trend: newMetric.trend
+        trend: newMetric.trend,
+        timeframe: newMetric.timeframe,
+        channel: newMetric.channel,
+        topic: newMetric.topic
       };
       
       setMetrics(prev => [...prev, metric]);
-      setNewMetric({ name: '', value: '', change: '', trend: 'neutral' });
+      setNewMetric({ name: '', value: '', change: '', trend: 'neutral', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.SALES });
       setIsModalOpen(false);
     }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setNewMetric({ name: '', value: '', change: '', trend: 'neutral' });
+    setNewMetric({ name: '', value: '', change: '', trend: 'neutral', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.SALES });
   };
 
   const handleAIGenerate = () => {
-    // Simple random metric generation
+    // Sample metrics with filter properties
     const sampleMetrics = [
-      { name: 'Customer Satisfaction', value: '92%', change: '+5%', trend: 'up' },
-      { name: 'Avg Order Value', value: '$127', change: '+8%', trend: 'up' },
-      { name: 'Bounce Rate', value: '32%', change: '-2%', trend: 'up' },
-      { name: 'Page Load Time', value: '1.2s', change: '-0.3s', trend: 'up' },
-      { name: 'Return Rate', value: '8.5%', change: '+1.2%', trend: 'down' },
+      { name: 'Customer Satisfaction', value: '92%', change: '+5%', trend: 'up', timeframe: Timeframe.QUARTER, channel: Channel.EMAIL, topic: Topic.CUSTOMER_SERVICE },
+      { name: 'Avg Order Value', value: '$127', change: '+8%', trend: 'up', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.SALES },
+      { name: 'Bounce Rate', value: '32%', change: '-2%', trend: 'up', timeframe: Timeframe.WEEK, channel: Channel.SOCIAL, topic: Topic.MARKETING },
+      { name: 'Page Load Time', value: '1.2s', change: '-0.3s', trend: 'up', timeframe: Timeframe.TODAY, channel: Channel.MOBILE, topic: Topic.TECH },
+      { name: 'Return Rate', value: '8.5%', change: '+1.2%', trend: 'down', timeframe: Timeframe.MONTH, channel: Channel.DIRECT, topic: Topic.OPERATIONS },
     ];
     
     const randomMetric = sampleMetrics[Math.floor(Math.random() * sampleMetrics.length)];
@@ -101,7 +122,10 @@ const KeyMetrics: React.FC = () => {
       name: randomMetric.name,
       value: randomMetric.value,
       change: randomMetric.change,
-      trend: randomMetric.trend as 'up' | 'down' | 'neutral'
+      trend: randomMetric.trend as 'up' | 'down' | 'neutral',
+      timeframe: randomMetric.timeframe,
+      channel: randomMetric.channel,
+      topic: randomMetric.topic
     });
   };
 
@@ -109,24 +133,30 @@ const KeyMetrics: React.FC = () => {
     <>
       <OverviewCard title="Key Metrics" variant="metrics" onAdd={handleAddMetric}>
         <div className="h-48 overflow-y-auto space-y-3">
-          {metrics.map((metric, index) => (
-            <div key={`${metric.name}-${index}`} className="flex justify-between items-center">
-              <span className="font-medium text-gray-800">{metric.name}</span>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-gray-800">{metric.value}</span>
-                {metric.change && (
-                  <span 
-                    className={`text-xs ${
-                      metric.trend === 'up' ? 'text-success' : 
-                      metric.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'
-                    }`}
-                  >
-                    {metric.change}
-                  </span>
-                )}
+          {filteredMetrics.length > 0 ? (
+            filteredMetrics.map((metric, index) => (
+              <div key={`${metric.name}-${index}`} className="flex justify-between items-center">
+                <span className="font-medium text-gray-800">{metric.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-gray-800">{metric.value}</span>
+                  {metric.change && (
+                    <span 
+                      className={`text-xs ${
+                        metric.trend === 'up' ? 'text-success' : 
+                        metric.trend === 'down' ? 'text-destructive' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {metric.change}
+                    </span>
+                  )}
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="text-sm text-gray-500 text-center py-8">
+              No metrics match the selected filters.
             </div>
-          ))}
+          )}
         </div>
       </OverviewCard>
 
@@ -190,6 +220,53 @@ const KeyMetrics: React.FC = () => {
                   <option value="down">Down (Negative)</option>
                   <option value="neutral">Neutral</option>
                 </select>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Timeframe</label>
+                  <select
+                    value={newMetric.timeframe}
+                    onChange={(e) => setNewMetric(prev => ({ ...prev, timeframe: e.target.value as Timeframe }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Timeframe.TODAY}>Today</option>
+                    <option value={Timeframe.WEEK}>This Week</option>
+                    <option value={Timeframe.MONTH}>This Month</option>
+                    <option value={Timeframe.QUARTER}>This Quarter</option>
+                    <option value={Timeframe.YEAR}>This Year</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Channel</label>
+                  <select
+                    value={newMetric.channel}
+                    onChange={(e) => setNewMetric(prev => ({ ...prev, channel: e.target.value as Channel }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Channel.WEB}>Web</option>
+                    <option value={Channel.MOBILE}>Mobile</option>
+                    <option value={Channel.EMAIL}>Email</option>
+                    <option value={Channel.SOCIAL}>Social</option>
+                    <option value={Channel.DIRECT}>Direct</option>
+                    <option value={Channel.ORGANIC}>Organic</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+                  <select
+                    value={newMetric.topic}
+                    onChange={(e) => setNewMetric(prev => ({ ...prev, topic: e.target.value as Topic }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900"
+                  >
+                    <option value={Topic.SALES}>Sales</option>
+                    <option value={Topic.MARKETING}>Marketing</option>
+                    <option value={Topic.PRODUCT}>Product</option>
+                    <option value={Topic.CUSTOMER_SERVICE}>Customer Service</option>
+                    <option value={Topic.OPERATIONS}>Operations</option>
+                    <option value={Topic.FINANCE}>Finance</option>
+                    <option value={Topic.TECH}>Technology</option>
+                  </select>
+                </div>
               </div>
               <div className="flex justify-end gap-3">
                 <button
