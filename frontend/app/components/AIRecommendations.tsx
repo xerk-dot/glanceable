@@ -13,6 +13,8 @@ interface Recommendation {
 const AIRecommendations: React.FC = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [, setLoading] = useState(true);
+  const [urgencyFilter, setUrgencyFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [impactFilter, setImpactFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -51,6 +53,13 @@ const AIRecommendations: React.FC = () => {
     text: '',
     urgency: 'medium' as 'high' | 'medium' | 'low',
     impact: 'medium' as 'high' | 'medium' | 'low'
+  });
+
+  // Filter recommendations based on selected filters
+  const filteredRecommendations = recommendations.filter((rec) => {
+    const urgencyMatch = urgencyFilter === 'all' || rec.urgency === urgencyFilter;
+    const impactMatch = impactFilter === 'all' || rec.impact === impactFilter;
+    return urgencyMatch && impactMatch;
   });
 
   const getPriorityIcon = (urgency: string, impact: string) => {
@@ -109,31 +118,79 @@ const AIRecommendations: React.FC = () => {
   return (
     <>
       <OverviewCard title="AI Recommendations" variant="recommendations" onAdd={handleAddRecommendation}>
-        <ul className="h-48 overflow-y-auto space-y-3">
-          {recommendations.map((rec) => (
-            <li key={rec.id} className="flex items-start gap-2">
-              {getPriorityIcon(rec.urgency || 'medium', rec.impact || 'medium')}
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-800">{rec.text}</p>
-                <div className="flex gap-2 mt-1">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    rec.urgency === 'high' ? 'bg-red-100 text-red-800' :
-                    rec.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
-                    {rec.urgency} urgency
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    rec.impact === 'high' ? 'bg-purple-100 text-purple-800' :
-                    rec.impact === 'medium' ? 'bg-orange-100 text-orange-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {rec.impact} impact
-                  </span>
+        {/* Filter Controls */}
+        <div className="flex gap-3 mb-4 pb-3 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-600">Urgency:</label>
+            <select
+              value={urgencyFilter}
+              onChange={(e) => setUrgencyFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
+              className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-600">Impact:</label>
+            <select
+              value={impactFilter}
+              onChange={(e) => setImpactFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
+              className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          {(urgencyFilter !== 'all' || impactFilter !== 'all') && (
+            <button
+              onClick={() => {
+                setUrgencyFilter('all');
+                setImpactFilter('all');
+              }}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* Recommendations List */}
+        <ul className="h-40 overflow-y-auto space-y-3">
+          {filteredRecommendations.length > 0 ? (
+            filteredRecommendations.map((rec) => (
+              <li key={rec.id} className="flex items-start gap-2">
+                {getPriorityIcon(rec.urgency || 'medium', rec.impact || 'medium')}
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-800">{rec.text}</p>
+                  <div className="flex gap-2 mt-1">
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      rec.urgency === 'high' ? 'bg-red-100 text-red-800' :
+                      rec.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {rec.urgency} urgency
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      rec.impact === 'high' ? 'bg-purple-100 text-purple-800' :
+                      rec.impact === 'medium' ? 'bg-orange-100 text-orange-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {rec.impact} impact
+                    </span>
+                  </div>
                 </div>
-              </div>
+              </li>
+            ))
+          ) : (
+            <li className="text-sm text-gray-500 text-center py-4">
+              No recommendations match the selected filters.
             </li>
-          ))}
+          )}
         </ul>
       </OverviewCard>
 
