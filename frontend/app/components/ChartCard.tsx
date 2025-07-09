@@ -92,8 +92,10 @@ const ChartCard: React.FC<ChartCardProps> = ({
             arcLinkLabelsTextColor="#000000"
             arcLinkLabelsThickness={2}
             arcLinkLabelsColor={{ from: 'color' }}
+            arcLinkLabel={(d) => String(d.label)}
             arcLabelsSkipAngle={10}
             arcLabelsTextColor="#ffffff"
+            arcLabel={(d) => String(d.label)}
             colors={{ scheme: 'category10' }}
             theme={nivoTheme}
             legends={[

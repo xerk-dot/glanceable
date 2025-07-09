@@ -14,13 +14,7 @@ interface Chart {
   data: ChartData[];
 }
 
-interface DatabaseChart {
-  id: string;
-  title: string;
-  chartType: 'pie' | 'bar';
-  numericValue: string;
-  metric: string;
-}
+
 
 const DynamicChartArea: React.FC = () => {
   // State for charts
@@ -36,175 +30,59 @@ const DynamicChartArea: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingChart, setEditingChart] = useState<Chart | null>(null);
 
-  // Load charts from database
+  // Create simple static charts with random data
   const loadChartsFromDatabase = useCallback(async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts`);
-      const result = await response.json();
-      
-      if (result.success) {
-        const chartsWithData = result.charts.map((chart: DatabaseChart) => ({
-          id: chart.id,
-          title: chart.title,
-          chartType: chart.chartType,
-          numericValue: chart.numericValue,
-          metric: chart.metric,
-          data: []
-        }));
-        setCharts(chartsWithData);
-        
-        // Initialize loading states
-        const loadingStates: Record<string, boolean> = {};
-        chartsWithData.forEach((chart: Chart) => {
-          loadingStates[chart.id] = true;
-        });
-        setLoadingCharts(loadingStates);
-        
-        // Fetch data for each chart
-        chartsWithData.forEach((chart: Chart) => {
-          fetchChartData(chart);
-        });
-      } else {
-        // Initialize with default charts if database is empty
-        const defaultCharts = [
-          {
-            id: '1',
-            title: 'Revenue by Category',
-            chartType: 'pie' as const,
-            numericValue: 'sum',
-            metric: 'revenue',
-            data: [],
-          },
-          {
-            id: '2',
-            title: 'Daily Users by Segment',
-            chartType: 'pie' as const,
-            numericValue: 'count',
-            metric: 'user_segments',
-            data: [],
-          },
-        ];
-        
-        // Save default charts to database
-        for (const chart of defaultCharts) {
-          await saveChartToDatabase(chart);
-        }
-        
-        setCharts(defaultCharts);
-        setLoadingCharts({ '1': true, '2': true });
-        defaultCharts.forEach(chart => fetchChartData(chart));
-      }
-    } catch (error) {
-      console.error('Error loading charts from database:', error);
-      // Fallback to default charts
-      const defaultCharts = [
-        {
-          id: '1',
-          title: 'Revenue by Category',
-          chartType: 'pie' as const,
-          numericValue: 'sum',
-          metric: 'revenue',
-          data: [],
-        },
-        {
-          id: '2',
-          title: 'Daily Users by Segment',
-          chartType: 'pie' as const,
-          numericValue: 'count',
-          metric: 'user_segments',
-          data: [],
-        },
-      ];
-      setCharts(defaultCharts);
-      setLoadingCharts({ '1': true, '2': true });
-      defaultCharts.forEach(chart => fetchChartData(chart));
-    }
+    // Just create some hardcoded charts with random data
+    const staticCharts = [
+      {
+        id: '1',
+        title: 'Revenue by Category',
+        chartType: 'pie' as const,
+        numericValue: 'sum',
+        metric: 'revenue',
+        data: [
+          { id: 'Electronics', label: 'Electronics', value: 45000 },
+          { id: 'Clothing', label: 'Clothing', value: 32000 },
+          { id: 'Books', label: 'Books', value: 18000 },
+          { id: 'Home', label: 'Home & Garden', value: 25000 },
+          { id: 'Sports', label: 'Sports', value: 15000 },
+        ],
+      },
+      {
+        id: '2',
+        title: 'User Segments',
+        chartType: 'pie' as const,
+        numericValue: 'count',
+        metric: 'user_segments',
+        data: [
+          { id: 'Premium', label: 'Premium Users', value: 350 },
+          { id: 'Regular', label: 'Regular Users', value: 800 },
+          { id: 'Basic', label: 'Basic Users', value: 450 },
+          { id: 'Trial', label: 'Trial Users', value: 200 },
+        ],
+      },
+      {
+        id: '3',
+        title: 'Monthly Sales',
+        chartType: 'bar' as const,
+        numericValue: 'sum',
+        metric: 'sales',
+        data: [
+          { id: 'Jan', label: 'January', value: 28000 },
+          { id: 'Feb', label: 'February', value: 31000 },
+          { id: 'Mar', label: 'March', value: 35000 },
+          { id: 'Apr', label: 'April', value: 29000 },
+          { id: 'May', label: 'May', value: 42000 },
+          { id: 'Jun', label: 'June', value: 38000 },
+        ],
+      },
+    ];
+    
+    setCharts(staticCharts);
+    setLoadingCharts({});
   }, []);
 
-  // Save chart to database
-  const saveChartToDatabase = async (chart: Chart) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: chart.id,
-          title: chart.title,
-          chartType: chart.chartType,
-          numericValue: chart.numericValue,
-          metric: chart.metric
-        }),
-      });
-      const result = await response.json();
-      if (!result.success) {
-        console.error('Failed to save chart to database:', result.error);
-      }
-    } catch (error) {
-      console.error('Error saving chart to database:', error);
-    }
-  };
 
-  // Update chart in database
-  const updateChartInDatabase = async (chart: Chart) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts/${chart.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: chart.title,
-          chartType: chart.chartType,
-          numericValue: chart.numericValue,
-          metric: chart.metric
-        }),
-      });
-      const result = await response.json();
-      if (!result.success) {
-        console.error('Failed to update chart in database:', result.error);
-      }
-    } catch (error) {
-      console.error('Error updating chart in database:', error);
-    }
-  };
-
-  // Delete chart from database
-  const deleteChartFromDatabase = async (chartId: string) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/charts/${chartId}`, {
-        method: 'DELETE',
-      });
-      const result = await response.json();
-      if (!result.success) {
-        console.error('Failed to delete chart from database:', result.error);
-      }
-    } catch (error) {
-      console.error('Error deleting chart from database:', error);
-    }
-  };
-
-  // Fetch chart data from API
-  const fetchChartData = async (chart: Chart) => {
-    try {
-      setLoadingCharts((prev) => ({ ...prev, [chart.id]: true }));
-      const response = await fetch(
-        `/api/charts?chartType=${chart.chartType}&numericValue=${chart.numericValue}&metric=${chart.metric}&period=30d`
-      );
-      const result = await response.json();
-      
-      setCharts((prevCharts) =>
-        prevCharts.map((c) =>
-          c.id === chart.id ? { ...c, data: result.data } : c
-        )
-      );
-    } catch (error) {
-      console.error(`Error fetching chart data for ${chart.id}:`, error);
-    } finally {
-      setLoadingCharts((prev) => ({ ...prev, [chart.id]: false }));
-    }
-  };
 
   // Load charts from database on mount
   useEffect(() => {
@@ -224,12 +102,32 @@ const DynamicChartArea: React.FC = () => {
     }
   };
 
-  const handleDeleteChart = async (id: string) => {
-    await deleteChartFromDatabase(id);
+  const handleDeleteChart = (id: string) => {
     setCharts(charts.filter((chart) => chart.id !== id));
   };
 
-  const handleFormSubmit = async (formData: ChartFormData) => {
+  const handleFormSubmit = (formData: ChartFormData) => {
+    // Generate some random data for the new/updated chart
+    const generateRandomData = (chartType: 'pie' | 'bar', metric: string) => {
+      const dataCount = chartType === 'pie' ? 4 : 6;
+      const categories = {
+        revenue: ['Electronics', 'Clothing', 'Books', 'Home', 'Sports', 'Beauty'],
+        user_segments: ['Premium', 'Regular', 'Basic', 'Trial', 'Enterprise', 'Free'],
+        daily_users: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        orders: ['Online', 'Mobile', 'In-Store', 'Phone', 'Partner', 'Wholesale'],
+        sales: ['Q1', 'Q2', 'Q3', 'Q4', 'Holiday', 'Summer'],
+        category: ['Tech', 'Fashion', 'Food', 'Travel', 'Health', 'Education']
+      };
+      
+      const labels = categories[metric as keyof typeof categories] || categories.category;
+      
+             return labels.slice(0, dataCount).map((label) => ({
+         id: label,
+         label: label,
+         value: Math.floor(Math.random() * (metric === 'revenue' ? 50000 : 1000)) + (metric === 'revenue' ? 10000 : 100)
+       }));
+    };
+
     if (editingChart) {
       // Update existing chart
       const updatedChart = {
@@ -238,18 +136,14 @@ const DynamicChartArea: React.FC = () => {
         chartType: formData.chartType,
         numericValue: formData.numericValue,
         metric: formData.metric,
+        data: generateRandomData(formData.chartType, formData.metric),
       };
-      
-      await updateChartInDatabase(updatedChart);
       
       setCharts(
         charts.map((chart) =>
           chart.id === editingChart.id ? updatedChart : chart
         )
       );
-      
-      // Fetch new data for the updated chart
-      await fetchChartData(updatedChart);
     } else {
       // Add new chart
       const newChart: Chart = {
@@ -258,16 +152,10 @@ const DynamicChartArea: React.FC = () => {
         chartType: formData.chartType,
         numericValue: formData.numericValue,
         metric: formData.metric,
-        data: [],
+        data: generateRandomData(formData.chartType, formData.metric),
       };
       
-      await saveChartToDatabase(newChart);
-      
       setCharts([...charts, newChart]);
-      setLoadingCharts((prev) => ({ ...prev, [newChart.id]: true }));
-      
-      // Fetch data for the new chart
-      await fetchChartData(newChart);
     }
     
     setIsFormOpen(false);
