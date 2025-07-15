@@ -202,26 +202,6 @@ The application is fully responsive and works on:
 - **SQL Injection Prevention** - SQLAlchemy ORM protection
 - **Environment Variables** - Sensitive data stored securely
 
-## 🚀 Performance
-
-- **Server-Side Rendering** - Next.js SSR for fast initial loads
-- **API Caching** - Optimized database queries
-- **Image Optimization** - Next.js automatic image optimization
-- **Bundle Optimization** - Code splitting and tree shaking
-
-## 📈 Monitoring
-
-- **Health Checks** - Built-in health monitoring
-- **Error Handling** - Comprehensive error responses
-- **Logging** - Structured logging for debugging
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 📄 License
 
