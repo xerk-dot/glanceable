@@ -1,0 +1,982 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Glanceable Frontend API",
+    "description": "Complete API for the Glanceable dashboard frontend application with full CRUD operations",
+    "version": "2.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/api/charts": {
+      "get": {
+        "summary": "Get chart data",
+        "description": "Fetches chart data for visualization based on specified parameters",
+        "parameters": [
+          {
+            "name": "chartType",
+            "in": "query",
+            "description": "Type of chart to retrieve data for",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["bar", "pie"],
+              "default": "bar"
+            }
+          },
+          {
+            "name": "numericValue",
+            "in": "query",
+            "description": "Type of numeric value to display",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "count"
+            }
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "description": "Metric to display in the chart",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "revenue"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for the data",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "30d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with chart data"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "summary": "Get key performance metrics",
+        "description": "Fetches key performance metrics for the dashboard",
+        "responses": {
+          "200": {
+            "description": "Successful response with metrics data"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/priorities": {
+      "get": {
+        "summary": "Get current priorities",
+        "description": "Fetches current priorities and tasks",
+        "responses": {
+          "200": {
+            "description": "Successful response with priorities data"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/recommendations": {
+      "get": {
+        "summary": "Get AI-generated recommendations",
+        "description": "Fetches AI-generated recommendations",
+        "responses": {
+          "200": {
+            "description": "Successful response with recommendations"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/charts": {
+      "get": {
+        "summary": "Get user charts",
+        "description": "Fetches all user-created chart configurations with filtering and pagination",
+        "parameters": [
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Filter by timeframe",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "today", "week", "month", "quarter", "year"]
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "description": "Filter by channel",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "web", "mobile", "email", "social", "direct", "organic"]
+            }
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "description": "Filter by topic",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "sales", "marketing", "product", "customer_service", "operations", "finance", "tech"]
+            }
+          },
+          {
+            "name": "chartType",
+            "in": "query",
+            "description": "Filter by chart type",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "bar", "pie"]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with user charts and pagination info"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create user chart",
+        "description": "Creates a new user chart configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "chartType", "numericValue", "metric"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Chart title"
+                  },
+                  "chartType": {
+                    "type": "string",
+                    "enum": ["bar", "pie"],
+                    "description": "Type of chart"
+                  },
+                  "numericValue": {
+                    "type": "string",
+                    "enum": ["count", "average", "sum", "median"],
+                    "description": "Numeric aggregation method"
+                  },
+                  "metric": {
+                    "type": "string",
+                    "enum": ["revenue", "daily_users", "orders", "user_segments", "category"],
+                    "description": "Metric to visualize"
+                  },
+                  "timeframe": {
+                    "type": "string",
+                    "description": "Time period for the chart"
+                  },
+                  "channel": {
+                    "type": "string",
+                    "description": "Channel filter"
+                  },
+                  "topic": {
+                    "type": "string",
+                    "description": "Topic filter"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Chart created successfully"
+          },
+          "400": {
+            "description": "Bad request - validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update user chart",
+        "description": "Updates an existing user chart configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Chart ID"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "chartType": {
+                    "type": "string",
+                    "enum": ["bar", "pie"]
+                  },
+                  "numericValue": {
+                    "type": "string",
+                    "enum": ["count", "average", "sum", "median"]
+                  },
+                  "metric": {
+                    "type": "string",
+                    "enum": ["revenue", "daily_users", "orders", "user_segments", "category"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chart updated successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Chart not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete user chart",
+        "description": "Deletes a user chart configuration",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Chart ID to delete",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chart deleted successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Chart not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/metrics": {
+      "get": {
+        "summary": "Get user metrics",
+        "description": "Fetches all user-created metrics with filtering and pagination",
+        "parameters": [
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Filter by timeframe",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "today", "week", "month", "quarter", "year"]
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "description": "Filter by channel",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "web", "mobile", "email", "social", "direct", "organic"]
+            }
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "description": "Filter by topic",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "sales", "marketing", "product", "customer_service", "operations", "finance", "tech"]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with user metrics and pagination info"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create user metric",
+        "description": "Creates a new user metric",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "value"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Metric title"
+                  },
+                  "value": {
+                    "oneOf": [
+                      {"type": "string"},
+                      {"type": "number"}
+                    ],
+                    "description": "Metric value"
+                  },
+                  "change": {
+                    "type": "number",
+                    "description": "Percentage change"
+                  },
+                  "changeType": {
+                    "type": "string",
+                    "enum": ["positive", "negative", "neutral"],
+                    "description": "Type of change"
+                  },
+                  "trend": {
+                    "type": "string",
+                    "enum": ["up", "down", "neutral"],
+                    "description": "Trend direction"
+                  },
+                  "unit": {
+                    "type": "string",
+                    "description": "Unit of measurement"
+                  },
+                  "target": {
+                    "type": "number",
+                    "description": "Target value"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Metric created successfully"
+          },
+          "400": {
+            "description": "Bad request - validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update user metric",
+        "description": "Updates an existing user metric",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Metric ID"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "oneOf": [
+                      {"type": "string"},
+                      {"type": "number"}
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Metric updated successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Metric not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete user metric",
+        "description": "Deletes a user metric",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Metric ID to delete",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metric deleted successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Metric not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/priorities": {
+      "get": {
+        "summary": "Get user priorities",
+        "description": "Fetches all user priorities with filtering and pagination",
+        "parameters": [
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Filter by timeframe",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "today", "week", "month", "quarter", "year"]
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "description": "Filter by channel",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "web", "mobile", "email", "social", "direct", "organic"]
+            }
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "description": "Filter by topic",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "sales", "marketing", "product", "customer_service", "operations", "finance", "tech"]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "pending", "in-progress", "completed", "planned"]
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "description": "Filter by priority level",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "high", "medium", "low"]
+            }
+          },
+          {
+            "name": "impact",
+            "in": "query",
+            "description": "Filter by impact level",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "high", "medium", "low"]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with user priorities and pagination info"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create user priority",
+        "description": "Creates a new user priority",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "priority", "impact", "status"],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "description": "Priority title"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Priority description"
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Deadline date"
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"],
+                    "description": "Priority level"
+                  },
+                  "impact": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"],
+                    "description": "Impact level"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "in-progress", "completed", "planned"],
+                    "description": "Current status"
+                  },
+                  "assignee": {
+                    "type": "string",
+                    "description": "Assigned person or team"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Priority created successfully"
+          },
+          "400": {
+            "description": "Bad request - validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update user priority",
+        "description": "Updates an existing user priority",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Priority ID"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "in-progress", "completed", "planned"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Priority updated successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Priority not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete user priority",
+        "description": "Deletes a user priority",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Priority ID to delete",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Priority deleted successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Priority not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/user/recommendations": {
+      "get": {
+        "summary": "Get user recommendations",
+        "description": "Fetches all user recommendations with filtering and pagination",
+        "parameters": [
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Filter by timeframe",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "today", "week", "month", "quarter", "year"]
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "description": "Filter by channel",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "web", "mobile", "email", "social", "direct", "organic"]
+            }
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "description": "Filter by topic",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "sales", "marketing", "product", "customer_service", "operations", "finance", "tech"]
+            }
+          },
+          {
+            "name": "urgency",
+            "in": "query",
+            "description": "Filter by urgency level",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "high", "medium", "low"]
+            }
+          },
+          {
+            "name": "impact",
+            "in": "query",
+            "description": "Filter by impact level",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "high", "medium", "low"]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Filter by recommendation category",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["all", "ai-generated", "user-created", "system"]
+            }
+          },
+          {
+            "name": "implemented",
+            "in": "query",
+            "description": "Filter by implementation status",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response with user recommendations and pagination info"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create user recommendation",
+        "description": "Creates a new user recommendation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["text", "urgency", "impact"],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Recommendation text"
+                  },
+                  "urgency": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"],
+                    "description": "Urgency level"
+                  },
+                  "impact": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low"],
+                    "description": "Impact level"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": ["ai-generated", "user-created", "system"],
+                    "description": "Recommendation category"
+                  },
+                  "implemented": {
+                    "type": "boolean",
+                    "description": "Whether the recommendation has been implemented"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recommendation created successfully"
+          },
+          "400": {
+            "description": "Bad request - validation error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update user recommendation",
+        "description": "Updates an existing user recommendation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Recommendation ID"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "implemented": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recommendation updated successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Recommendation not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete user recommendation",
+        "description": "Deletes a user recommendation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Recommendation ID to delete",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recommendation deleted successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Recommendation not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  }
+}

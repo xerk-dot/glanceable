@@ -23,38 +23,75 @@ const TopPriorities: React.FC = () => {
   const [, setLoading] = useState(true);
   const { filters } = useFilters();
 
-  useEffect(() => {
-    const fetchPriorities = async () => {
-      try {
-        const response = await fetch('/api/priorities');
-        const data = await response.json();
-        
-        if (data.priorities) {
-          // Transform API data to component format
-          const transformedPriorities = data.priorities.map((priority: { id: string; title?: string; task?: string; deadline?: string; status: string }) => ({
-            id: priority.id,
-            task: priority.title || priority.task,
-            deadline: priority.deadline || 'No deadline',
-            status: priority.status === 'planned' ? 'pending' : priority.status
-          }));
-          setPriorities(transformedPriorities);
-        }
-      } catch (error) {
-        console.error('Error fetching priorities:', error);
-        // Keep fallback data with filter properties
-        setPriorities([
+  const fetchPriorities = async () => {
+    try {
+      // Get user priorities from backend
+      const userResponse = await fetch('/backend/api/user/priorities');
+      const userData = await userResponse.json();
+      
+      console.log('User priorities response:', userData);
+      
+      // Also get system priorities from backend
+      const systemResponse = await fetch('/backend/api/priorities');
+      const systemData = await systemResponse.json();
+      
+      console.log('System priorities response:', systemData);
+      
+      let allPriorities: Priority[] = [];
+      
+      // Transform user priorities - backend returns items array
+      if (userData.items) {
+        console.log('Transforming user priorities:', userData.items);
+        const transformedUserPriorities = userData.items.map((priority: any) => ({
+          id: priority.id,
+          task: priority.title,
+          deadline: priority.deadline || 'No deadline',
+          status: priority.status,
+          timeframe: priority.timeframe || Timeframe.WEEK,
+          channel: priority.channel || Channel.DIRECT,
+          topic: priority.topic || Topic.OPERATIONS
+        }));
+        console.log('Transformed user priorities:', transformedUserPriorities);
+        allPriorities = [...allPriorities, ...transformedUserPriorities];
+      }
+      
+      // Transform system priorities
+      if (systemData.priorities) {
+        const transformedSystemPriorities = systemData.priorities.map((priority: any) => ({
+          id: priority.id,
+          task: priority.title || priority.task,
+          deadline: priority.deadline || 'No deadline',
+          status: priority.status === 'planned' ? 'pending' : priority.status,
+          timeframe: Timeframe.WEEK,
+          channel: Channel.DIRECT,
+          topic: Topic.OPERATIONS
+        }));
+        allPriorities = [...allPriorities, ...transformedSystemPriorities];
+      }
+      
+      if (allPriorities.length === 0) {
+        // Fallback data if no priorities are available
+        allPriorities = [
           { id: '1', task: 'Review Q4 financials', deadline: 'Today', status: 'in-progress', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.FINANCE },
           { id: '2', task: 'Update team on project status', deadline: 'Dec 15', status: 'pending', timeframe: Timeframe.WEEK, channel: Channel.EMAIL, topic: Topic.OPERATIONS },
-          { id: '3', task: 'Prepare monthly report', deadline: 'Dec 18', status: 'pending', timeframe: Timeframe.MONTH, channel: Channel.DIRECT, topic: Topic.OPERATIONS },
-          { id: '4', task: 'Optimize mobile checkout', deadline: 'This week', status: 'in-progress', timeframe: Timeframe.WEEK, channel: Channel.MOBILE, topic: Topic.SALES },
-          { id: '5', task: 'Launch social media campaign', deadline: 'Dec 20', status: 'pending', timeframe: Timeframe.MONTH, channel: Channel.SOCIAL, topic: Topic.MARKETING },
-          { id: '6', task: 'Fix server performance issues', deadline: 'Tomorrow', status: 'in-progress', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.TECH },
-        ]);
-      } finally {
-        setLoading(false);
+        ];
       }
-    };
+      
+      console.log('Final all priorities:', allPriorities);
+      setPriorities(allPriorities);
+    } catch (error) {
+      console.error('Error fetching priorities:', error);
+      // Fallback data
+      setPriorities([
+        { id: '1', task: 'Review Q4 financials', deadline: 'Today', status: 'in-progress', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.FINANCE },
+        { id: '2', task: 'Update team on project status', deadline: 'Dec 15', status: 'pending', timeframe: Timeframe.WEEK, channel: Channel.EMAIL, topic: Topic.OPERATIONS },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPriorities();
   }, []);
 
@@ -94,22 +131,40 @@ const TopPriorities: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmitPriority = (e: React.FormEvent) => {
+  const handleSubmitPriority = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPriority.task && newPriority.deadline) {
-      const priority: Priority = {
-        id: Date.now().toString(),
-        task: newPriority.task,
-        deadline: newPriority.deadline,
-        status: newPriority.status,
-        timeframe: newPriority.timeframe,
-        channel: newPriority.channel,
-        topic: newPriority.topic
-      };
-      
-      setPriorities(prev => [...prev, priority]);
-      setNewPriority({ task: '', deadline: '', status: 'pending', timeframe: Timeframe.WEEK, channel: Channel.DIRECT, topic: Topic.OPERATIONS });
-      setIsModalOpen(false);
+      try {
+        const priorityData = {
+          title: newPriority.task,
+          deadline: newPriority.deadline,
+          priority: 'medium', // Default priority level
+          impact: 'medium', // Default impact level
+          status: newPriority.status,
+          timeframe: newPriority.timeframe.toLowerCase(),
+          channel: newPriority.channel.toLowerCase(),
+          topic: newPriority.topic.toLowerCase()
+        };
+
+        const response = await fetch('/backend/api/user/priorities', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(priorityData)
+        });
+
+        if (response.ok) {
+          // Refresh the priorities list
+          await fetchPriorities();
+          setNewPriority({ task: '', deadline: '', status: 'pending', timeframe: Timeframe.WEEK, channel: Channel.DIRECT, topic: Topic.OPERATIONS });
+          setIsModalOpen(false);
+        } else {
+          console.error('Failed to create priority');
+        }
+      } catch (error) {
+        console.error('Error creating priority:', error);
+      }
     }
   };
 

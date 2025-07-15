@@ -21,38 +21,69 @@ const AIRecommendations: React.FC = () => {
   const [impactFilter, setImpactFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const { filters } = useFilters();
 
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      try {
-        const response = await fetch('/api/recommendations');
-        const data = await response.json();
-        
-        if (data.recommendations) {
-          // Transform string array to object array
-          const transformedRecommendations = data.recommendations.map((rec: string, index: number) => ({
-            id: (index + 1).toString(),
-            text: rec,
-            urgency: ['high', 'medium', 'low'][index % 3] as 'high' | 'medium' | 'low',
-            impact: ['high', 'medium', 'medium'][index % 3] as 'high' | 'medium' | 'low'
-          }));
-          setRecommendations(transformedRecommendations);
-        }
-      } catch (error) {
-        console.error('Error fetching recommendations:', error);
-        // Keep fallback data with filter properties
-        setRecommendations([
+  const fetchRecommendations = async () => {
+    try {
+      // Get user recommendations from backend
+      const userResponse = await fetch('/backend/api/user/recommendations');
+      const userData = await userResponse.json();
+      
+      // Also get system recommendations from backend
+      const systemResponse = await fetch('/backend/api/recommendations');
+      const systemData = await systemResponse.json();
+      
+      let allRecommendations: Recommendation[] = [];
+      
+      // Transform user recommendations - backend returns items array
+      if (userData.items) {
+        const transformedUserRecommendations = userData.items.map((rec: any) => ({
+          id: rec.id,
+          text: rec.text,
+          urgency: rec.urgency || 'medium',
+          impact: rec.impact || 'medium',
+          timeframe: rec.timeframe || Timeframe.WEEK,
+          channel: rec.channel || Channel.WEB,
+          topic: rec.topic || Topic.SALES
+        }));
+        allRecommendations = [...allRecommendations, ...transformedUserRecommendations];
+      }
+      
+      // Transform system recommendations
+      if (systemData.recommendations) {
+        const transformedSystemRecommendations = systemData.recommendations.map((rec: string, index: number) => ({
+          id: `system-${index + 1}`,
+          text: rec,
+          urgency: ['high', 'medium', 'low'][index % 3] as 'high' | 'medium' | 'low',
+          impact: ['high', 'medium', 'medium'][index % 3] as 'high' | 'medium' | 'low',
+          timeframe: Timeframe.WEEK,
+          channel: Channel.WEB,
+          topic: Topic.SALES
+        }));
+        allRecommendations = [...allRecommendations, ...transformedSystemRecommendations];
+      }
+      
+      if (allRecommendations.length === 0) {
+        // Fallback data if no recommendations are available
+        allRecommendations = [
           { id: '1', text: 'Optimize checkout flow', urgency: 'high', impact: 'high', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.SALES },
           { id: '2', text: 'Update mobile app UI', urgency: 'medium', impact: 'medium', timeframe: Timeframe.MONTH, channel: Channel.MOBILE, topic: Topic.PRODUCT },
           { id: '3', text: 'Expand social media presence', urgency: 'low', impact: 'medium', timeframe: Timeframe.QUARTER, channel: Channel.SOCIAL, topic: Topic.MARKETING },
-          { id: '4', text: 'Improve customer support response time', urgency: 'high', impact: 'high', timeframe: Timeframe.WEEK, channel: Channel.EMAIL, topic: Topic.CUSTOMER_SERVICE },
-          { id: '5', text: 'Automate financial reporting', urgency: 'medium', impact: 'high', timeframe: Timeframe.MONTH, channel: Channel.DIRECT, topic: Topic.FINANCE },
-          { id: '6', text: 'Upgrade server infrastructure', urgency: 'high', impact: 'medium', timeframe: Timeframe.TODAY, channel: Channel.DIRECT, topic: Topic.TECH },
-        ]);
-      } finally {
-        setLoading(false);
+        ];
       }
-    };
+      
+      setRecommendations(allRecommendations);
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      // Fallback data
+      setRecommendations([
+        { id: '1', text: 'Optimize checkout flow', urgency: 'high', impact: 'high', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.SALES },
+        { id: '2', text: 'Update mobile app UI', urgency: 'medium', impact: 'medium', timeframe: Timeframe.MONTH, channel: Channel.MOBILE, topic: Topic.PRODUCT },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchRecommendations();
   }, []);
   
@@ -90,22 +121,39 @@ const AIRecommendations: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmitRecommendation = (e: React.FormEvent) => {
+  const handleSubmitRecommendation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newRecommendation.text) {
-      const recommendation: Recommendation = {
-        id: Date.now().toString(),
-        text: newRecommendation.text,
-        urgency: newRecommendation.urgency,
-        impact: newRecommendation.impact,
-        timeframe: newRecommendation.timeframe,
-        channel: newRecommendation.channel,
-        topic: newRecommendation.topic
-      };
-      
-      setRecommendations(prev => [...prev, recommendation]);
-      setNewRecommendation({ text: '', urgency: 'medium', impact: 'medium', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.SALES });
-      setIsModalOpen(false);
+      try {
+        const recommendationData = {
+          text: newRecommendation.text,
+          urgency: newRecommendation.urgency,
+          impact: newRecommendation.impact,
+          timeframe: newRecommendation.timeframe.toLowerCase(),
+          channel: newRecommendation.channel.toLowerCase(),
+          topic: newRecommendation.topic.toLowerCase(),
+          category: 'user-created'
+        };
+
+        const response = await fetch('/backend/api/user/recommendations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(recommendationData)
+        });
+
+        if (response.ok) {
+          // Refresh the recommendations list
+          await fetchRecommendations();
+          setNewRecommendation({ text: '', urgency: 'medium', impact: 'medium', timeframe: Timeframe.WEEK, channel: Channel.WEB, topic: Topic.SALES });
+          setIsModalOpen(false);
+        } else {
+          console.error('Failed to create recommendation');
+        }
+      } catch (error) {
+        console.error('Error creating recommendation:', error);
+      }
     }
   };
 

@@ -22,40 +22,74 @@ const KeyMetrics: React.FC = () => {
   const [, setLoading] = useState(true);
   const { filters } = useFilters();
 
-  useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const response = await fetch('/api/metrics');
-        const data = await response.json();
-        
-        if (data.metrics) {
-          // Transform API data to component format
-          const transformedMetrics = data.metrics.map((metric: { id: string; title?: string; name?: string; value: string | number; change?: string; changeType?: string }) => ({
-            id: metric.id,
-            name: metric.title || metric.name,
-            value: metric.value,
-            change: metric.change,
-            trend: metric.changeType === 'positive' ? 'up' : 
-                   metric.changeType === 'negative' ? 'down' : 'neutral'
-          }));
-          setMetrics(transformedMetrics);
-        }
-      } catch (error) {
-        console.error('Error fetching metrics:', error);
-        // Keep fallback data with filter properties
-        setMetrics([
+  const fetchMetrics = async () => {
+    try {
+      // First try to get user metrics from backend
+      const userResponse = await fetch('/backend/api/user/metrics');
+      const userData = await userResponse.json();
+      
+      // Also get system metrics from backend
+      const systemResponse = await fetch('/backend/api/metrics');
+      const systemData = await systemResponse.json();
+      
+      let allMetrics: Metric[] = [];
+      
+      // Transform user metrics - backend returns items array
+      if (userData.items) {
+        const transformedUserMetrics = userData.items.map((metric: any) => ({
+          id: metric.id,
+          name: metric.title,
+          value: metric.value,
+          change: metric.change ? `${metric.change > 0 ? '+' : ''}${metric.change}%` : undefined,
+          trend: metric.changeType === 'positive' ? 'up' : 
+                 metric.changeType === 'negative' ? 'down' : 'neutral',
+          timeframe: metric.timeframe || Timeframe.MONTH,
+          channel: metric.channel || Channel.WEB,
+          topic: metric.topic || Topic.SALES
+        }));
+        allMetrics = [...allMetrics, ...transformedUserMetrics];
+      }
+      
+      // Transform system metrics
+      if (systemData.metrics) {
+        const transformedSystemMetrics = systemData.metrics.map((metric: any) => ({
+          id: metric.id,
+          name: metric.title || metric.name,
+          value: metric.value,
+          change: metric.change,
+          trend: metric.changeType === 'positive' ? 'up' : 
+                 metric.changeType === 'negative' ? 'down' : 'neutral',
+          timeframe: Timeframe.MONTH,
+          channel: Channel.WEB,
+          topic: Topic.SALES
+        }));
+        allMetrics = [...allMetrics, ...transformedSystemMetrics];
+      }
+      
+      if (allMetrics.length === 0) {
+        // Fallback data if no metrics are available
+        allMetrics = [
           { name: 'Revenue', value: '$45.2K', change: '+12%', trend: 'up', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.SALES },
           { name: 'Users', value: '2,847', change: '+5%', trend: 'up', timeframe: Timeframe.WEEK, channel: Channel.MOBILE, topic: Topic.MARKETING },
           { name: 'Orders', value: '182', change: '-3%', trend: 'down', timeframe: Timeframe.TODAY, channel: Channel.WEB, topic: Topic.SALES },
           { name: 'Conversion', value: '3.2%', change: '+0.8%', trend: 'up', timeframe: Timeframe.MONTH, channel: Channel.ORGANIC, topic: Topic.MARKETING },
-          { name: 'Support Tickets', value: '24', change: '+8%', trend: 'down', timeframe: Timeframe.WEEK, channel: Channel.EMAIL, topic: Topic.CUSTOMER_SERVICE },
-          { name: 'Server Uptime', value: '99.9%', change: '0%', trend: 'neutral', timeframe: Timeframe.MONTH, channel: Channel.DIRECT, topic: Topic.TECH },
-        ]);
-      } finally {
-        setLoading(false);
+        ];
       }
-    };
+      
+      setMetrics(allMetrics);
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+      // Fallback data
+      setMetrics([
+        { name: 'Revenue', value: '$45.2K', change: '+12%', trend: 'up', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.SALES },
+        { name: 'Users', value: '2,847', change: '+5%', trend: 'up', timeframe: Timeframe.WEEK, channel: Channel.MOBILE, topic: Topic.MARKETING },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchMetrics();
   }, []);
 
@@ -82,23 +116,47 @@ const KeyMetrics: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmitMetric = (e: React.FormEvent) => {
+  const handleSubmitMetric = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMetric.name && newMetric.value) {
-      const metric: Metric = {
-        id: Date.now().toString(),
-        name: newMetric.name,
-        value: newMetric.value,
-        change: newMetric.change || undefined,
-        trend: newMetric.trend,
-        timeframe: newMetric.timeframe,
-        channel: newMetric.channel,
-        topic: newMetric.topic
-      };
-      
-      setMetrics(prev => [...prev, metric]);
-      setNewMetric({ name: '', value: '', change: '', trend: 'neutral', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.SALES });
-      setIsModalOpen(false);
+      try {
+        // Convert change string to number (remove % and +/- signs)
+        let changeValue: number | undefined;
+        if (newMetric.change) {
+          const cleanChange = newMetric.change.replace(/[+%]/g, '');
+          changeValue = parseFloat(cleanChange);
+        }
+
+        const metricData = {
+          title: newMetric.name,
+          value: newMetric.value,
+          change: changeValue,
+          changeType: newMetric.trend === 'up' ? 'positive' : 
+                     newMetric.trend === 'down' ? 'negative' : 'neutral',
+          timeframe: newMetric.timeframe.toLowerCase(),
+          channel: newMetric.channel.toLowerCase(),
+          topic: newMetric.topic.toLowerCase()
+        };
+
+        const response = await fetch('/backend/api/user/metrics', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(metricData)
+        });
+
+        if (response.ok) {
+          // Refresh the metrics list
+          await fetchMetrics();
+          setNewMetric({ name: '', value: '', change: '', trend: 'neutral', timeframe: Timeframe.MONTH, channel: Channel.WEB, topic: Topic.SALES });
+          setIsModalOpen(false);
+        } else {
+          console.error('Failed to create metric');
+        }
+      } catch (error) {
+        console.error('Error creating metric:', error);
+      }
     }
   };
 

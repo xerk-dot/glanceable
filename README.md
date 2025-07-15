@@ -1,377 +1,235 @@
 # Glanceable Dashboard
 
-> **A modern, hybrid business intelligence dashboard that works both locally with a Python backend and standalone in production.**
+A modern, responsive dashboard application built with Next.js and FastAPI, featuring real-time data visualization, user-generated content management, and seamless cloud deployment.
 
-Glanceable is a full-stack dashboard application that intelligently adapts to your deployment environment. For local development, it connects to a Python Flask backend with DuckDB for real data. In production, it runs as a standalone React application with beautiful static data visualizations.
+## 🚀 Live Demo
 
-![Dashboard Preview](https://img.shields.io/badge/Status-Production%20Ready-green?style=for-the-badge)
-![Tech Stack](https://img.shields.io/badge/Stack-React%20%2B%20Python-blue?style=for-the-badge)
-![Database](https://img.shields.io/badge/Database-DuckDB-orange?style=for-the-badge)
+- **Frontend:** https://glanceable-qh8novrij-xerk-dots-projects.vercel.app
+- **Backend API:** https://glanceable-backend-985142625034.us-central1.run.app
+- **API Documentation:** https://glanceable-qh8novrij-xerk-dots-projects.vercel.app/api-docs
 
-🌐 **Live Demo:** [https://glanceable.vercel.app/](https://glanceable.vercel.app/)
+## 📋 Features
 
-## ✨ Key Features
+### Core Functionality
+- **Interactive Dashboard** - Real-time data visualization with customizable charts
+- **Charts & Analytics** - Create, edit, and visualize data with bar and pie charts
+- **Key Metrics** - Track important KPIs with trend indicators
+- **Priority Management** - Organize and track tasks with status updates
+- **AI Recommendations** - Smart suggestions for business improvements
+- **Responsive Design** - Fully mobile-friendly interface
 
-### 🎯 **Smart Dashboard**
-- **Fixed Overview Area** with Key Metrics, AI Recommendations, and Top Priorities
-- **Dynamic Chart Area** with real-time chart creation and customization
-- **Quick Filters** for timeframe, channel, and topic analysis
-- **Adaptive Data Sources** - real backend data locally, static data in production
-
-### 📊 **Advanced Charts & Analytics**
-- **Bar Charts** for comparative analysis and trends
-- **Pie Charts** for distribution and segmentation insights  
-- **Line Charts** for time-series and performance tracking
-- **Real-time Metrics** with live data feeds (local development)
-- **Responsive Design** optimized for all devices
-
-### 🤖 **AI-Powered Insights**
-- Intelligent recommendations based on data patterns
-- Automated priority detection and alerting
-- Smart categorization and trend analysis
-
-### ⚡ **Deployment Flexibility**
-- **Local Development:** Full-stack with Python backend and real database
-- **Production:** Standalone frontend with beautiful static visualizations
-- **Seamless Environment Detection** - automatically adapts to available resources
+### Technical Features
+- **Full CRUD Operations** - Create, read, update, delete for all data types
+- **Real-time Data** - Live updates and synchronization
+- **Data Persistence** - PostgreSQL database with SQLAlchemy ORM
+- **API Documentation** - Interactive Swagger UI for API exploration
+- **Cloud Deployment** - Production-ready with Docker and Cloud Run
+- **CORS Support** - Cross-origin requests properly configured
 
 ## 🏗️ Architecture
 
-### 🎨 Frontend (React + Next.js)
 ```
-frontend/
-├── app/
-│   ├── components/              # React UI components
-│   │   ├── Dashboard.tsx        # Main dashboard layout
-│   │   ├── ChartCard.tsx        # Chart display components
-│   │   ├── KeyMetrics.tsx       # KPI dashboard
-│   │   ├── AIRecommendations.tsx
-│   │   ├── TopPriorities.tsx
-│   │   └── ...
-│   ├── api/                     # Next.js API routes (hybrid mode)
-│   │   ├── charts/route.ts      # Chart data endpoints
-│   │   ├── metrics/route.ts     # Metrics aggregation
-│   │   ├── priorities/route.ts  # Priority calculations
-│   │   └── recommendations/route.ts
-│   ├── globals.css              # Tailwind CSS styles
-│   ├── layout.tsx               # App layout
-│   └── page.tsx                 # Main dashboard page
-├── public/                      # Static assets
-└── package.json                 # Dependencies and scripts
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   Database      │
+│   (Next.js)     │◄──►│   (FastAPI)     │◄──►│   (PostgreSQL)  │
+│   Vercel        │    │   Cloud Run     │    │   GCP SQL       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### 🐍 Backend (Python + Flask + DuckDB)
-```
-python-backend/
-├── src/
-│   ├── app.py                   # Main Flask application
-│   ├── user_data_db.py          # Database connection & queries
-│   └── __init__.py
-├── scripts/
-│   └── init_db.py               # Database initialization
-├── data/                        # DuckDB database files
-│   ├── glanceable.duckdb        # Main database
-│   └── user_data.duckdb         # User analytics data
-├── server.py                    # Development server entry point
-├── main.py                      # Production/GCP entry point
-├── requirements.txt             # Python dependencies
-└── app.yaml                     # Google Cloud App Engine config
-```
+### Tech Stack
 
-## 🚀 Quick Start
+**Frontend:**
+- Next.js 15 with App Router
+- TypeScript
+- Tailwind CSS
+- Nivo Charts for data visualization
+- React Hook Form for form management
+- Swagger UI for API documentation
+
+**Backend:**
+- FastAPI with Python 3.11
+- SQLAlchemy 2.0 for ORM
+- Pydantic for data validation
+- Uvicorn ASGI server
+- PostgreSQL database
+
+**Infrastructure:**
+- **Frontend:** Vercel (serverless deployment)
+- **Backend:** Google Cloud Run (containerized)
+- **Database:** Google Cloud SQL (PostgreSQL)
+- **Container Registry:** Google Container Registry
+
+## 🛠️ Development Setup
 
 ### Prerequisites
+- Node.js 18+
+- Python 3.11+
+- PostgreSQL (local) or GCP account
+- Docker (for containerization)
 
-- **Node.js** 18.0.0+ with npm/pnpm
-- **Python** 3.9+ with pip
-- **Git** for cloning the repository
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/yourusername/glanceable.git
-cd glanceable
-```
-
-### 2. Frontend Setup
+### Frontend Setup
 
 ```bash
 cd frontend
-npm install  # or pnpm install
+npm install
+npm run dev
 ```
 
-### 3. Backend Setup (for Local Development)
+The frontend will be available at `http://localhost:3000`
+
+### Backend Setup
 
 ```bash
 cd python-backend
 pip install -r requirements.txt
-
-# Initialize database with sample data
-python3 scripts/init_db.py
+uvicorn main:app --reload --port 8000
 ```
 
-## 🖥️ Running Locally (Full-Stack Mode)
+The backend will be available at `http://localhost:8000`
 
-### Start the Backend Server
-```bash
-cd python-backend
-python3 server.py
-```
-🔗 **Backend will run at:** http://localhost:5000
+### Environment Variables
 
-### Start the Frontend (in a new terminal)
-```bash
-cd frontend
-npm run dev
-```
-🌐 **Frontend will run at:** http://localhost:3000
-
-### Verify Connection
-```bash
-# Test backend health
-curl http://localhost:5000/health
-
-# Test frontend API (should return backend data)
-curl http://localhost:3000/api/metrics
-```
-
-## 🌍 Production Mode (Standalone Frontend)
-
-### Run Frontend Standalone
-```bash
-cd frontend
-npm run dev:standalone    # Development standalone mode
-npm run build:standalone  # Production build without backend
-```
-
-### Deploy to Vercel
-```bash
-cd frontend
-npm run build:standalone
-# Deploy using Vercel CLI or connect GitHub repo to Vercel
-```
-
-## 📜 Available Scripts
-
-### Frontend Scripts
-```bash
-npm run dev                # Full-stack development (connects to backend)
-npm run dev:standalone     # Frontend-only development mode
-npm run build              # Production build (expects backend)
-npm run build:standalone   # Standalone production build
-npm run start             # Start production server
-npm run lint              # Run ESLint
-```
-
-### Backend Scripts
-```bash
-python3 server.py              # Development server with debug mode
-python3 main.py                # Production server (GCP ready)
-python3 scripts/init_db.py     # Initialize database with sample data
-```
-
-## 🎨 Technology Stack
-
-### Frontend
-- **React 19** - Latest React with concurrent features
-- **Next.js 15** - App Router with built-in API routes
-- **TypeScript** - Type safety and developer experience  
-- **TailwindCSS** - Utility-first styling framework
-- **Nivo Charts** - Beautiful, responsive data visualizations
-- **React Hook Form** - Performant form management
-
-### Backend  
-- **Python 3.9+** - Modern Python runtime
-- **Flask 3.0** - Lightweight web framework with CORS
-- **DuckDB** - Fast analytical database with excellent Python integration
-- **Pandas** - Data analysis and aggregation
-- **SQLAlchemy** - Database ORM for complex queries
-
-### Deployment
-- **Frontend:** Vercel (production), localhost:3000 (development)
-- **Backend:** Google Cloud App Engine (production), localhost:5000 (development)
-- **Database:** File-based DuckDB with 1000+ sample records
-
-## 📊 Sample Data
-
-The backend comes with pre-populated sample data for immediate testing:
-
-- **1,000 Transactions** - Revenue, categories, user segments
-- **2,000 User Activities** - Engagement metrics, activity types
-- **500 Orders** - Conversion data, order statuses, amounts
-
-Database tables:
-```sql
-transactions (id, user_id, amount, category, created_at)
-user_activities (id, user_id, activity_type, created_at)
-orders (id, user_id, status, total_amount, created_at)
-```
-
-## 📡 API Endpoints
-
-### Backend Endpoints (localhost:5000)
-```bash
-GET /health                           # Service health check
-GET /api/charts/bar?period=30d        # Bar chart data
-GET /api/charts/pie?period=30d        # Pie chart data  
-GET /api/charts/line?period=30d       # Line chart data
-GET /api/metrics                      # Key performance metrics
-GET /api/recommendations              # AI-powered insights
-GET /api/priorities                   # Priority tasks/issues
-```
-
-### Frontend API Routes (localhost:3000)
-```bash
-GET /api/charts        # Hybrid: backend data or static fallback
-GET /api/metrics       # KPI aggregation with intelligent fallback
-GET /api/priorities    # Priority detection (backend preferred)
-GET /api/recommendations  # AI recommendations (static in standalone)
-```
-
-## 🔧 Configuration
-
-### Environment Detection
-
-The application automatically detects its environment:
-
-**Local Development (.env.local):**
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:5000
-```
-
-**Production (.env.production):**
-```bash
-NEXT_PUBLIC_API_URL=
-# Empty API URL triggers standalone mode
-```
-
-### Backend Configuration
-```bash
-# Automatic DuckDB database paths:
-# ./data/glanceable.duckdb - main application data
-# ./data/user_data.duckdb - user analytics data
-
-# Server configuration
-PORT=5000                    # Development server port
-FLASK_ENV=development        # Development mode with debug
+**Backend (.env):**
+```env
+PROJECT_ID=your-gcp-project-id
+REGION=us-central1
+INSTANCE_NAME=your-db-instance
+DB_NAME=glanceable
+DB_USER=postgres
+DB_PASSWORD=your-password
 ```
 
 ## 🚢 Deployment
 
-### Frontend (Vercel)
+### Backend Deployment (Google Cloud Run)
+
+```bash
+# Build and push Docker image
+cd python-backend
+gcloud builds submit --tag gcr.io/PROJECT_ID/glanceable-backend:latest
+
+# Deploy to Cloud Run
+gcloud run deploy glanceable-backend \
+  --image gcr.io/PROJECT_ID/glanceable-backend:latest \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --port 8080 \
+  --add-cloudsql-instances PROJECT_ID:REGION:INSTANCE_NAME
+```
+
+### Frontend Deployment (Vercel)
+
 ```bash
 cd frontend
 vercel --prod
 ```
-Automatically detects `build:standalone` for production builds.
 
-### Backend (Google Cloud)
+## 📊 API Endpoints
+
+### System Endpoints
+- `GET /api/charts` - Get chart data with filtering
+- `GET /api/metrics` - Get system metrics
+- `GET /api/priorities` - Get system priorities
+- `GET /api/recommendations` - Get system recommendations
+
+### User Management Endpoints
+- `GET /api/user/charts` - List user charts
+- `POST /api/user/charts` - Create new chart
+- `PUT /api/user/charts` - Update chart
+- `DELETE /api/user/charts` - Delete chart
+
+Similar CRUD endpoints exist for:
+- `/api/user/metrics`
+- `/api/user/priorities`
+- `/api/user/recommendations`
+
+### Health Check
+- `GET /health` - Service health status
+
+## 🎨 UI Components
+
+### Dashboard Sections
+1. **Key Metrics** - Display important KPIs with trend indicators
+2. **Dynamic Chart Area** - Interactive charts with customization options
+3. **Top Priorities** - Task management with status tracking
+4. **AI Recommendations** - Smart suggestions and insights
+
+### Chart Types
+- **Bar Charts** - For categorical data comparison
+- **Pie Charts** - For proportional data visualization
+- **Custom Metrics** - User-defined KPI tracking
+
+## 🔧 Configuration
+
+### CORS Settings
+The backend is configured to accept requests from:
+- `http://localhost:3000` (development)
+- `https://*.vercel.app` (production)
+- Additional domains as needed
+
+### Database Schema
+- **Charts** - User-created visualizations
+- **Metrics** - Key performance indicators
+- **Priorities** - Task and priority management
+- **Recommendations** - AI-generated suggestions
+
+## 🧪 Testing
+
+### Frontend
+```bash
+cd frontend
+npm test
+```
+
+### Backend
 ```bash
 cd python-backend
-gcloud app deploy app.yaml
+pytest
 ```
 
-### Local Production Testing
-```bash
-# Frontend production build
-cd frontend && npm run build:standalone && npm start
+## 📱 Responsive Design
 
-# Backend production mode  
-cd python-backend && python3 main.py
-```
+The application is fully responsive and works on:
+- Desktop (1200px+)
+- Tablet (768px - 1199px)
+- Mobile (320px - 767px)
 
-## 🔍 Troubleshooting
+## 🔐 Security
 
-### Frontend won't connect to backend
-```bash
-# Check backend is running
-curl http://localhost:5000/health
+- **CORS Protection** - Configured for specific origins
+- **Input Validation** - Pydantic schemas for data validation
+- **SQL Injection Prevention** - SQLAlchemy ORM protection
+- **Environment Variables** - Sensitive data stored securely
 
-# Verify environment configuration
-cat frontend/.env.local  # Should contain NEXT_PUBLIC_API_URL=http://localhost:5000
-```
+## 🚀 Performance
 
-### Backend database errors
-```bash
-# Reinitialize database
-cd python-backend
-rm -rf data/*.duckdb
-python3 scripts/init_db.py
-```
+- **Server-Side Rendering** - Next.js SSR for fast initial loads
+- **API Caching** - Optimized database queries
+- **Image Optimization** - Next.js automatic image optimization
+- **Bundle Optimization** - Code splitting and tree shaking
 
-### Port conflicts
-```bash
-# Kill processes on ports 3000-5000
-npx kill-port 3000
-npx kill-port 5000
-```
+## 📈 Monitoring
 
-## 🛠️ Development Workflow
-
-### Full-Stack Development
-1. Start backend: `cd python-backend && python3 server.py`
-2. Start frontend: `cd frontend && npm run dev`
-3. Open: http://localhost:3000
-4. Backend API available at: http://localhost:5000
-
-### Frontend-Only Development
-1. Start standalone: `cd frontend && npm run dev:standalone`
-2. Open: http://localhost:3000
-3. Uses static data, no backend required
-
-### Adding New Features
-1. **Backend:** Add logic to `src/app.py` and `src/user_data_db.py`
-2. **Frontend:** Create components in `app/components/`
-3. **API Integration:** Update API routes in `app/api/`
-
-## 📈 Performance
-
-- **Frontend:** Sub-second page loads with code splitting
-- **Backend:** Handles 100+ concurrent requests with connection pooling
-- **Database:** Optimized DuckDB queries for analytical workloads
-- **Charts:** Smooth 60fps animations with thousands of data points
-- **Hybrid Architecture:** Zero backend dependency in production
-
-## 🎯 Use Cases
-
-### Business Intelligence
-- **Executive Dashboards** - High-level KPIs and trends
-- **Sales Analytics** - Revenue tracking and forecasting  
-- **User Engagement** - Activity metrics and retention analysis
-- **Development & Demo** - Local full-stack, production lightweight
-
-### Industries
-- **E-commerce** - Sales, conversion, and customer analytics
-- **SaaS** - User engagement, churn, and revenue metrics
-- **Marketing** - Campaign performance and ROI tracking
-- **Agencies** - Client demonstrations with beautiful static data
+- **Health Checks** - Built-in health monitoring
+- **Error Handling** - Comprehensive error responses
+- **Logging** - Structured logging for debugging
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Test both standalone and full-stack modes
-4. Commit changes (`git commit -m 'Add amazing feature'`)
-5. Push to branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🌟 Why Glanceable?
+## 🙏 Acknowledgments
 
-> **"The perfect balance of powerful local development and lightweight production deployment."**
-
-- ✅ **Hybrid Architecture** - Full backend locally, standalone in production
-- ✅ **Zero Backend Dependency** - Deploy frontend anywhere, anytime
-- ✅ **Real Data Development** - Work with actual database and APIs locally
-- ✅ **Beautiful Static Mode** - Stunning visualizations even without backend
-- ✅ **Developer Friendly** - Simple setup, clear documentation
-- ✅ **Production Ready** - Deployed and tested in real environments
-
----
-
-**Ready to build beautiful dashboards?** [Get started locally](#-running-locally-full-stack-mode) or [view the live demo](https://glanceable.vercel.app)
-
-*Built with ❤️ for flexible, data-driven applications*
+- Built with FastAPI and Next.js
+- Charts powered by Nivo
+- Hosted on Vercel and Google Cloud Platform
+- Database provided by Google Cloud SQL

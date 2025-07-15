@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/backend/(.*)",
+      "destination": "https://glanceable-backend-985142625034.us-central1.run.app/$1"
+    }
+  ]
+}
